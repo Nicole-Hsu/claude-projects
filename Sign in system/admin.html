@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>簽到管理後台</title>
+<style>
+:root {
+  --bg:#f0f4f8;--card:#fff;--accent:#4a9e78;--accent-light:#d4ede2;
+  --warn:#d96060;--text:#2d2420;--text-mid:#5a6a7a;--text-dim:#9aacbc;
+  --border:#e0e8f0;--shadow:0 2px 12px rgba(0,0,0,.08);--radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+#header{background:linear-gradient(135deg,#2d6a50,#4a9e78);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 12px rgba(45,106,80,.3);flex-wrap:wrap;gap:10px;}
+#header h1{font-size:1.2rem;font-weight:700;}
+#header .sub{font-size:.8rem;opacity:.75;margin-top:2px;}
+.header-btns{display:flex;gap:10px;flex-wrap:wrap;}
+.hdr-btn{padding:8px 16px;border-radius:8px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;font-size:.85rem;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;}
+.hdr-btn:hover{background:rgba(255,255,255,.28);}
+#stats{display:flex;gap:12px;padding:16px 20px;flex-wrap:wrap;}
+.stat-card{flex:1;min-width:110px;background:var(--card);border-radius:var(--radius);padding:14px 18px;box-shadow:var(--shadow);text-align:center;}
+.stat-num{font-size:2rem;font-weight:700;color:var(--accent);}
+.stat-label{font-size:.78rem;color:var(--text-mid);margin-top:3px;}
+#searchBar{margin:0 20px 14px;display:flex;gap:10px;}
+#searchInput{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.95rem;font-family:inherit;background:var(--card);color:var(--text);}
+#searchInput:focus{outline:none;border-color:var(--accent);}
+#tableWrap{margin:0 20px 20px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:auto;}
+table{width:100%;border-collapse:collapse;font-size:.88rem;min-width:650px;}
+thead{background:linear-gradient(90deg,#2d6a50,#4a9e78);color:#fff;}
+th{padding:12px 14px;text-align:left;font-weight:600;white-space:nowrap;}
+td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#f6faf8;}
+.idx-badge{display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--accent-light);color:var(--accent);font-size:.75rem;font-weight:700;text-align:center;line-height:24px;}
+.sig-thumb{width:90px;height:40px;border:1px solid var(--border);border-radius:5px;object-fit:contain;background:#fafafa;cursor:pointer;}
+.sig-thumb:hover{border-color:var(--accent);}
+.sig-loading{color:var(--text-dim);font-size:.75rem;}
+#noData{text-align:center;padding:40px;color:var(--text-dim);display:none;}
+#emptyMsg{display:none;text-align:center;padding:60px 20px;color:var(--text-dim);}
+#emptyMsg .icon{font-size:3rem;margin-bottom:12px;}
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:999;align-items:center;justify-content:center;}
+#lightbox.show{display:flex;}
+#lightbox img{max-width:90vw;max-height:80vh;background:#fff;border-radius:10px;padding:12px;box-shadow:0 8px 40px rgba(0,0,0,.4);}
+#lightbox .close-btn{position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:1.4rem;cursor:pointer;}
+.note{font-size:.75rem;color:var(--text-dim);padding:8px 20px 16px;}
+#loadingBanner{text-align:center;padding:12px;color:var(--accent);font-size:.9rem;display:none;}
+@media print{body{background:#fff;}.no-print{display:none!important;}#tableWrap{box-shadow:none;margin:0;border-radius:0;}}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <h1>📋 簽到管理後台</h1>
+    <div class="sub">從 Google Sheets 讀取 · 簽名從 Firestore 讀取</div>
+  </div>
+  <div class="header-btns no-print">
+    <button class="hdr-btn" onclick="loadAll()">🔄 重新整理</button>
+    <button class="hdr-btn" onclick="exportCSV()">⬇ 匯出 CSV</button>
+    <button class="hdr-btn" onclick="window.print()">🖨 列印名單</button>
+  </div>
+</div>
+
+<div id="loadingBanner">⏳ 讀取中，請稍候…</div>
+
+<div id="stats">
+  <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">總簽到人數</div></div>
+  <div class="stat-card"><div class="stat-num" id="statOrgs">0</div><div class="stat-label">單位數</div></div>
+  <div class="stat-card"><div class="stat-num" id="statLatest">—</div><div class="stat-label">最後簽到時間</div></div>
+</div>
+
+<div id="searchBar" class="no-print">
+  <input type="text" id="searchInput" placeholder="🔍 搜尋姓名 / 單位 / 職稱…" oninput="renderTable()">
+</div>
+
+<div id="tableWrap">
+  <table>
+    <thead><tr>
+      <th>#</th><th>簽到時間</th><th>姓名</th><th>服務單位</th>
+      <th>職稱</th><th>聯絡電話</th><th>身分證後4碼</th><th>簽名</th>
+    </tr></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div id="noData">查無符合資料</div>
+</div>
+
+<div id="emptyMsg">
+  <div class="icon">📭</div>
+  <div>尚無簽到記錄</div>
+  <div style="font-size:.85rem;margin-top:8px">請確認 Google Sheets 是否有資料</div>
+</div>
+
+<div class="note no-print">簽名從 Firestore 即時讀取，第一次載入可能需要幾秒鐘</div>
+
+<div id="lightbox" onclick="closeLightbox()">
+  <button class="close-btn">✕</button>
+  <img id="lightboxImg" src="" alt="簽名">
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCmhvbgPnnNOCTJ6xPXuFCO37o0LIFwrtA",
+  authDomain: "signinsystem2026.firebaseapp.com",
+  projectId: "signinsystem2026",
+  storageBucket: "signinsystem2026.firebasestorage.app",
+  messagingSenderId: "331926593930",
+  appId: "1:331926593930:web:a1788e67d8c52334432873"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRhAY3Py9gLV5yUF_TpRxo7jTs-yPnfHUnnM4CSmmrcmDNMw4GfxEeR2E7t_8PjacU/exec';
+
+let records = [];
+
+// ── 讀取 Sheets 資料 ──
+async function loadFromSheets() {
+  const res = await fetch(SCRIPT_URL + '?action=getData');
+  const json = await res.json();
+  return json.map(r => ({
+    time:     r['簽到時間'] || '',
+    name:     r['姓名']     || '',
+    org:      r['服務單位'] || '',
+    jobTitle: r['職稱']     || '',
+    phone:    r['聯絡電話'] || '',
+    idLast4:  r['身分證後4碼'] || '',
+    event:    r['活動名稱'] || '',
+    sigDocId: r['簽名DocId']  || '',
+    signature: null,
+  }));
+}
+
+// ── 從 Firestore 讀取單筆簽名 ──
+async function loadSig(docId) {
+  if (!docId) return null;
+  try {
+    const snap = await getDoc(doc(db, 'signatures', docId));
+    return snap.exists() ? snap.data().signature : null;
+  } catch(e) { return null; }
+}
+
+// ── 全部載入 ──
+window.loadAll = async function() {
+  document.getElementById('loadingBanner').style.display = 'block';
+  try {
+    records = await loadFromSheets();
+  } catch(e) {
+    alert('讀取 Sheets 失敗：' + e.message);
+    records = [];
+  }
+  updateStats();
+  renderTable();
+  const has = records.length > 0;
+  document.getElementById('tableWrap').style.display = has ? '' : 'none';
+  document.getElementById('emptyMsg').style.display  = has ? 'none' : 'block';
+  document.getElementById('searchBar').style.display = has ? '' : 'none';
+  document.getElementById('loadingBanner').style.display = 'none';
+
+  // 非同步逐筆載入簽名
+  records.forEach(async (r, i) => {
+    if (!r.sigDocId) return;
+    const sig = await loadSig(r.sigDocId);
+    if (sig) {
+      records[i].signature = sig;
+      updateSigCell(i, sig);
+    }
+  });
+};
+
+function updateSigCell(idx, sig) {
+  const cell = document.querySelector(`[data-sigidx="${idx}"]`);
+  if (!cell) return;
+  cell.innerHTML = `<img class="sig-thumb" src="${sig}" onclick="window.openLightbox('${sig}')">`;
+}
+
+// ── 統計 ──
+function updateStats() {
+  document.getElementById('statTotal').textContent = records.length;
+  document.getElementById('statOrgs').textContent = new Set(records.map(r=>r.org).filter(Boolean)).size;
+  if (records.length) {
+    const t = String(records[records.length-1].time||'');
+    document.getElementById('statLatest').textContent = t.includes(' ') ? t.split(' ').slice(-2).join(' ') : t;
+  } else { document.getElementById('statLatest').textContent = '—'; }
+}
+
+// ── 渲染表格 ──
+window.renderTable = function() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = records.map((r,i)=>({...r,_i:i})).filter(r =>
+    !q || [r.name,r.org,r.jobTitle].some(v=>v&&String(v).toLowerCase().includes(q))
+  );
+  const tbody = document.getElementById('tableBody');
+  const noData = document.getElementById('noData');
+  if (!filtered.length) { tbody.innerHTML=''; noData.style.display='block'; return; }
+  noData.style.display='none';
+  tbody.innerHTML = filtered.map((r,i) => `
+    <tr>
+      <td><span class="idx-badge">${i+1}</span></td>
+      <td style="white-space:nowrap;font-size:.8rem;color:#6b8090">${esc(r.time)}</td>
+      <td><strong>${esc(r.name)}</strong></td>
+      <td>${esc(r.org)}</td>
+      <td>${esc(r.jobTitle)}</td>
+      <td>${esc(r.phone||'—')}</td>
+      <td>${esc(r.idLast4||'—')}</td>
+      <td data-sigidx="${r._i}">${
+        r.signature
+          ? `<img class="sig-thumb" src="${r.signature}" onclick="window.openLightbox('${r.signature}')">`
+          : r.sigDocId ? '<span class="sig-loading">載入中…</span>' : '—'
+      }</td>
+    </tr>`).join('');
+};
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+window.openLightbox = function(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('show');}
+window.closeLightbox = function(){document.getElementById('lightbox').classList.remove('show');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')window.closeLightbox();});
+
+// ── 匯出 CSV ──
+window.exportCSV = function() {
+  if (!records.length){alert('尚無資料');return;}
+  const h=['#','簽到時間','姓名','服務單位','職稱','聯絡電話','身分證後4碼'];
+  const rows=records.map((r,i)=>[i+1,r.time,r.name,r.org,r.jobTitle,r.phone||'',r.idLast4||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv='﻿'+[h.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`簽到名單_${new Date().toLocaleDateString('zh-TW')}.csv`;
+  a.click();
+};
+
+// 啟動
+loadAll();
+setInterval(loadAll, 60000); // 每分鐘自動重新整理
+</script>
+</body>
+</html>

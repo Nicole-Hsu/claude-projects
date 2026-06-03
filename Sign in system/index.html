@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>活動簽到</title>
+<style>
+:root {
+  --bg: #f5f0eb;
+  --card: #ffffff;
+  --accent: #4a9e78;
+  --accent-dark: #357a5c;
+  --accent-light: #d4ede2;
+  --warn: #d96060;
+  --text: #2d2420;
+  --text-mid: #6b5c54;
+  --text-dim: #a08880;
+  --border: rgba(0,0,0,.10);
+  --shadow: 0 2px 12px rgba(0,0,0,.10), 0 1px 3px rgba(0,0,0,.06);
+  --radius: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { min-height: 100%; background: var(--bg); font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; color: var(--text); }
+
+body {
+  background-image:
+    radial-gradient(ellipse at 10% 10%, rgba(100,190,150,.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 85%, rgba(200,160,220,.14) 0%, transparent 50%);
+}
+
+/* ── HEADER ── */
+#header {
+  background: linear-gradient(135deg, #4a9e78, #357a5c);
+  color: #fff;
+  padding: 20px 20px 16px;
+  text-align: center;
+  box-shadow: 0 3px 12px rgba(53,122,92,.35);
+  position: relative;
+}
+#header .event-label { font-size: .78rem; opacity: .8; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+#header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: .04em; }
+#header .event-date { font-size: .82rem; opacity: .75; margin-top: 5px; }
+
+/* ── FORM CARD ── */
+#formCard {
+  margin: 18px 14px 30px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px 18px 26px;
+}
+#formCard h2 { font-size: 1rem; color: var(--text-mid); font-weight: 600; margin-bottom: 18px; display: flex; align-items: center; gap: 7px; }
+#formCard h2::before { content: ''; display: block; width: 4px; height: 18px; background: var(--accent); border-radius: 2px; }
+
+/* ── FIELDS ── */
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text-mid);
+  margin-bottom: 6px;
+  letter-spacing: .04em;
+}
+.field label .req { color: var(--warn); margin-left: 2px; }
+.field input, .field select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text);
+  background: #fafafa;
+  transition: border-color .2s, box-shadow .2s;
+  -webkit-appearance: none;
+}
+.field input:focus, .field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+  background: #fff;
+}
+.field input.error { border-color: var(--warn); }
+.field .hint { font-size: .75rem; color: var(--text-dim); margin-top: 4px; }
+
+/* ── SIGNATURE ── */
+#sigCard {
+  margin: 0 14px 18px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 18px 22px;
+}
+#sigCard h2 { font-size: 1rem; color: var(--text-mid); font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
+#sigCard h2::before { content: ''; display: block; width: 4px; height: 18px; background: #7ab4d8; border-radius: 2px; }
+
+.sig-wrap {
+  position: relative;
+  border: 2px dashed #c8d8e8;
+  border-radius: 10px;
+  background: #f8fbfd;
+  overflow: hidden;
+  touch-action: none;
+}
+#sigCanvas { display: block; width: 100%; cursor: crosshair; }
+.sig-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  pointer-events: none;
+  gap: 6px;
+  transition: opacity .3s;
+}
+.sig-placeholder .sig-icon { font-size: 2rem; opacity: .4; }
+.sig-placeholder span { font-size: .85rem; }
+.sig-placeholder.hidden { opacity: 0; }
+
+.sig-btns { display: flex; gap: 8px; margin-top: 10px; }
+.sig-btn {
+  flex: 1;
+  padding: 9px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: #f5f5f5;
+  color: var(--text-mid);
+  font-size: .85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .2s;
+}
+.sig-btn:hover { background: #eee; }
+.sig-btn.clear { color: var(--warn); border-color: #f8c0c0; background: #fff5f5; }
+
+/* ── SUBMIT ── */
+#submitBtn {
+  display: block;
+  width: calc(100% - 28px);
+  margin: 0 14px 30px;
+  padding: 15px;
+  background: linear-gradient(145deg, #5cb88e, #4a9e78);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(74,158,120,.4);
+  transition: all .2s;
+  letter-spacing: .05em;
+}
+#submitBtn:active { transform: scale(.97); }
+#submitBtn:disabled { background: #aaa; box-shadow: none; }
+
+/* ── ERROR MSG ── */
+.err-msg { color: var(--warn); font-size: .8rem; margin-top: 4px; display: none; }
+.err-msg.show { display: block; }
+
+/* ── SUCCESS SCREEN ── */
+#successScreen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #4a9e78, #357a5c);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  text-align: center;
+  z-index: 999;
+  padding: 30px;
+}
+#successScreen.show { display: flex; }
+.success-icon { font-size: 5rem; margin-bottom: 20px; animation: pop .5s cubic-bezier(.2,1.4,.5,1); }
+#successScreen h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 10px; }
+#successScreen .sub { font-size: 1rem; opacity: .85; margin-bottom: 30px; }
+#successScreen .name-display { font-size: 1.4rem; font-weight: 700; background: rgba(255,255,255,.2); border-radius: 12px; padding: 12px 24px; margin-bottom: 24px; }
+.countdown { font-size: .9rem; opacity: .7; }
+@keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+/* ── ADMIN LINK ── */
+.admin-link { text-align: center; padding-bottom: 10px; }
+.admin-link a { font-size: .75rem; color: var(--text-dim); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="event-label">活動簽到</div>
+  <h1 id="eventTitle">研討會暨培訓課程</h1>
+  <div class="event-date" id="eventDate"></div>
+</div>
+
+<div id="formCard">
+  <h2>基本資料</h2>
+
+  <div class="field">
+    <label>姓名 <span class="req">*</span></label>
+    <input type="text" id="fName" placeholder="請輸入真實姓名" autocomplete="off">
+    <div class="err-msg" id="errName">請填寫姓名</div>
+  </div>
+
+  <div class="field">
+    <label>服務單位 <span class="req">*</span></label>
+    <input type="text" id="fOrg" placeholder="例：台北市立醫院" autocomplete="organization">
+    <div class="err-msg" id="errOrg">請填寫服務單位</div>
+  </div>
+
+  <div class="field">
+    <label>職稱 <span class="req">*</span></label>
+    <input type="text" id="fTitle" placeholder="例：照顧服務員、護理師" autocomplete="off">
+    <div class="err-msg" id="errTitle">請填寫職稱</div>
+  </div>
+
+  <div class="field">
+    <label>聯絡電話</label>
+    <input type="tel" id="fPhone" placeholder="09XX-XXX-XXX" autocomplete="tel">
+  </div>
+
+  <div class="field">
+    <label>身分證後4碼</label>
+    <input type="text" id="fIdLast4" placeholder="例：1234" maxlength="4" inputmode="text">
+    <div class="hint">僅供身份核對，不對外揭露</div>
+  </div>
+</div>
+
+<div id="sigCard">
+  <h2>本人簽名</h2>
+  <div class="sig-wrap" id="sigWrap">
+    <canvas id="sigCanvas" height="160"></canvas>
+    <div class="sig-placeholder" id="sigPlaceholder">
+      <span class="sig-icon">✍️</span>
+      <span>請在此處手寫簽名</span>
+    </div>
+  </div>
+  <div class="sig-btns">
+    <button class="sig-btn clear" onclick="clearSig()">✕ 清除重寫</button>
+  </div>
+  <div class="err-msg" id="errSig">請完成簽名</div>
+</div>
+
+<button id="submitBtn" onclick="submitForm()">確認送出簽到 ✓</button>
+
+<div class="admin-link">
+  <a href="admin.html">管理人員入口</a>
+</div>
+
+<!-- 成功畫面 -->
+<div id="successScreen">
+  <div class="success-icon">✅</div>
+  <h2>簽到成功！</h2>
+  <div class="name-display" id="successName"></div>
+  <div class="sub">感謝您的參與</div>
+  <div class="countdown" id="countdown"></div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js';
+import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
+
+// ── Firebase 設定 ──
+const firebaseConfig = {
+  apiKey: "AIzaSyCmhvbgPnnNOCTJ6xPXuFCO37o0LIFwrtA",
+  authDomain: "signinsystem2026.firebaseapp.com",
+  projectId: "signinsystem2026",
+  storageBucket: "signinsystem2026.firebasestorage.app",
+  messagingSenderId: "331926593930",
+  appId: "1:331926593930:web:a1788e67d8c52334432873"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window._db = db;
+window._fsCollection = collection;
+window._fsAddDoc = addDoc;
+
+// ── 活動設定（可直接修改這裡）──
+const CONFIG = {
+  eventName: '照顧服務員術科培訓研討會',
+  eventDate: '2026年6月2日',
+  scriptUrl: 'https://script.google.com/macros/s/AKfycbzRhAY3Py9gLV5yUF_TpRxo7jTs-yPnfHUnnM4CSmmrcmDNMw4GfxEeR2E7t_8PjacU/exec',
+};
+window._CONFIG = CONFIG;
+
+// ── 初始化 ──
+document.getElementById('eventTitle').textContent = CONFIG.eventName;
+document.getElementById('eventDate').textContent = CONFIG.eventDate;
+
+// ── 簽名畫布 ──
+const canvas = document.getElementById('sigCanvas');
+const ctx = canvas.getContext('2d');
+let signed = false;
+let drawing = false;
+let lastX = 0, lastY = 0;
+
+function resizeCanvas() {
+  const wrap = document.getElementById('sigWrap');
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = wrap.clientWidth * ratio;
+  canvas.style.width = wrap.clientWidth + 'px';
+  canvas.height = 160 * ratio;
+  canvas.style.height = '160px';
+  ctx.scale(ratio, ratio);
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+}
+resizeCanvas();
+window.addEventListener('resize', () => { const data = canvas.toDataURL(); resizeCanvas(); if (signed) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0, canvas.width / (window.devicePixelRatio||1), 160); img.src = data; } });
+
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  if (e.touches) return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+function startDraw(e) {
+  e.preventDefault();
+  drawing = true;
+  const p = getPos(e);
+  lastX = p.x; lastY = p.y;
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+}
+function draw(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  const p = getPos(e);
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+  lastX = p.x; lastY = p.y;
+  if (!signed) {
+    signed = true;
+    document.getElementById('sigPlaceholder').classList.add('hidden');
+  }
+}
+function endDraw() { drawing = false; }
+
+canvas.addEventListener('mousedown', startDraw);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', endDraw);
+canvas.addEventListener('touchstart', startDraw, { passive: false });
+canvas.addEventListener('touchmove', draw, { passive: false });
+canvas.addEventListener('touchend', endDraw);
+
+function clearSig() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  signed = false;
+  document.getElementById('sigPlaceholder').classList.remove('hidden');
+  document.getElementById('errSig').classList.remove('show');
+}
+
+// ── 表單驗證 ──
+function validate() {
+  let ok = true;
+  const fields = [
+    { id: 'fName', err: 'errName' },
+    { id: 'fOrg',  err: 'errOrg'  },
+    { id: 'fTitle',err: 'errTitle' },
+  ];
+  fields.forEach(f => {
+    const el = document.getElementById(f.id);
+    const ok2 = el.value.trim().length > 0;
+    el.classList.toggle('error', !ok2);
+    document.getElementById(f.err).classList.toggle('show', !ok2);
+    if (!ok2) ok = false;
+  });
+  if (!signed) {
+    document.getElementById('errSig').classList.add('show');
+    ok = false;
+  } else {
+    document.getElementById('errSig').classList.remove('show');
+  }
+  return ok;
+}
+
+// ── 送出 ──
+async function submitForm() {
+  if (!validate()) { document.querySelector('.error, .sig-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '送出中…';
+
+  const CONFIG = window._CONFIG;
+  const record = {
+    time: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+    name: document.getElementById('fName').value.trim(),
+    org:  document.getElementById('fOrg').value.trim(),
+    jobTitle: document.getElementById('fTitle').value.trim(),
+    phone: document.getElementById('fPhone').value.trim(),
+    idLast4: document.getElementById('fIdLast4').value.trim(),
+    signature: canvas.toDataURL('image/png'),
+    event: CONFIG.eventName,
+  };
+
+  // 本機儲存
+  const records = JSON.parse(localStorage.getItem('signins') || '[]');
+  records.push(record);
+  localStorage.setItem('signins', JSON.stringify(records));
+
+  // 1. 把簽名存進 Firestore，取得 docId
+  let sigDocId = '';
+  try {
+    const db = window._db;
+    const col = window._fsCollection(db, 'signatures');
+    const docRef = await window._fsAddDoc(col, {
+      name: record.name,
+      time: record.time,
+      signature: record.signature,
+    });
+    sigDocId = docRef.id;
+  } catch(err) { console.warn('Firestore 儲存失敗', err); }
+
+  // 2. 文字欄位 + sigDocId 寫入 Google Sheets
+  if (CONFIG.scriptUrl) {
+    const params = new URLSearchParams({
+      name:     record.name,
+      org:      record.org,
+      jobTitle: record.jobTitle,
+      phone:    record.phone || '',
+      idLast4:  record.idLast4 || '',
+      time:     record.time,
+      event:    record.event,
+      sigDocId: sigDocId,
+    });
+    new Image().src = CONFIG.scriptUrl + '?' + params.toString();
+  }
+
+  showSuccess(record.name);
+}
+
+// ── 成功畫面 ──
+function showSuccess(name) {
+  document.getElementById('successName').textContent = name + ' 已完成簽到';
+  document.getElementById('successScreen').classList.add('show');
+  let sec = 3;
+  const cd = document.getElementById('countdown');
+  cd.textContent = `${sec} 秒後自動清除，供下一位使用`;
+  const t = setInterval(() => {
+    sec--;
+    if (sec <= 0) {
+      clearInterval(t);
+      resetForm();
+    } else {
+      cd.textContent = `${sec} 秒後自動清除，供下一位使用`;
+    }
+  }, 1000);
+}
+
+function resetForm() {
+  document.getElementById('successScreen').classList.remove('show');
+  ['fName','fOrg','fTitle','fPhone','fIdLast4'].forEach(id => document.getElementById(id).value = '');
+  clearSig();
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('submitBtn').textContent = '確認送出簽到 ✓';
+  document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+  document.querySelectorAll('.err-msg').forEach(el => el.classList.remove('show'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// module 外的函式需掛在 window 上供 HTML onclick 呼叫
+window.submitForm = submitForm;
+window.clearSig = clearSig;
+</script>
+</body>
+</html>

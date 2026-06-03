@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>健康暨高齡照顧研發中心 KPI 填報</title>
+<style>
+:root{
+  --sw:220px;
+  --navy:#1e293b; --navy-h:rgba(255,255,255,.06);
+  --blue:#2563eb; --blue-l:#eff6ff; --blue-b:#bfdbfe;
+  --green:#16a34a; --green-l:#f0fdf4; --green-b:#bbf7d0;
+  --amber:#d97706; --amber-l:#fefce8; --amber-b:#fde68a;
+  --red:#dc2626; --red-l:#fef2f2;
+  --purple:#7c3aed; --purple-l:#f5f3ff; --purple-b:#ede9fe;
+  --bg:#f8fafc; --card:#fff; --border:#e2e8f0;
+  --text:#1e293b; --muted:#64748b;
+  --fs:15px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Microsoft JhengHei','Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:var(--fs);display:flex;min-height:100vh;}
+a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
+
+/* ── Sidebar ── */
+#sb{width:var(--sw);background:var(--navy);color:#cbd5e1;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:100;display:flex;flex-direction:column;flex-shrink:0;}
+#sb-logo{padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);}
+#sb-logo .lg{width:30px;height:30px;background:#f59e0b;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+#sb-logo span{font-size:.78rem;font-weight:700;color:#fff;line-height:1.35;}
+.sb-sec{padding:14px 16px 4px;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#475569;font-weight:600;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;transition:background .12s;color:#94a3b8;position:relative;}
+.sb-item:hover{background:var(--navy-h);color:#e2e8f0;}
+.sb-item.active{background:var(--blue);color:#fff;}
+.sb-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
+.sb-name{flex:1;font-size:.84rem;line-height:1.3;}
+.sb-cnt{background:rgba(255,255,255,.15);color:#e2e8f0;font-size:.7rem;padding:2px 7px;border-radius:99px;font-weight:700;}
+.sb-item.active .sb-cnt{background:rgba(255,255,255,.3);}
+
+/* ── Main ── */
+#main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* ── Top Bar ── */
+#topbar{background:#fff;border-bottom:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:6px;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.tb-sp{flex:1;}
+.tb-btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:.8rem;color:var(--text);display:flex;align-items:center;gap:4px;font-family:inherit;transition:all .12s;}
+.tb-btn:hover{background:#f1f5f9;border-color:#94a3b8;}
+.tb-green{background:var(--green);color:#fff;border-color:var(--green);}
+.tb-green:hover{background:#15803d;}
+.tb-div{width:1px;height:18px;background:var(--border);margin:0 2px;}
+
+/* ── Content ── */
+#cnt{padding:20px 24px;flex:1;}
+
+/* ── Group Header ── */
+#ghdr{margin-bottom:14px;}
+#ghdr h2{font-size:1.2rem;font-weight:700;margin-bottom:3px;}
+#ghdr .gsub{font-size:.83rem;color:var(--muted);}
+.rate{color:var(--green);font-weight:700;}
+
+/* ── Filter Bar ── */
+#fbar{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.flabel{font-size:.78rem;color:var(--muted);white-space:nowrap;font-weight:600;}
+.fsearch{display:flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:5px 10px;}
+.fsearch input{border:none;background:transparent;outline:none;font-size:.83rem;font-family:inherit;width:120px;color:var(--text);}
+.stbtn{padding:4px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:.8rem;font-family:inherit;transition:all .12s;}
+.stbtn:hover{border-color:var(--blue);color:var(--blue);}
+.st-all{background:var(--blue);color:#fff;border-color:var(--blue);}
+.st-pend{background:#fef3c7;color:#92400e;border-color:#fde68a;}
+.st-done{background:#dcfce7;color:#15803d;border-color:#86efac;}
+.npill{padding:3px 9px;border-radius:99px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:.75rem;font-family:inherit;transition:all .12s;}
+.npill:hover,.npill.on{background:var(--blue-l);border-color:var(--blue);color:var(--blue);}
+.fdiv{width:1px;height:16px;background:var(--border);}
+
+/* ── Stat pills (next to group title) ── */
+#stats{display:flex;gap:5px;}
+.spill{display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:.8rem;font-weight:700;transition:all .12s;white-space:nowrap;}
+.spill:hover{background:#f1f5f9;border-color:#94a3b8;}
+.sblue{color:var(--blue);} .sgreen{color:var(--green);} .samber{color:var(--amber);}
+/* Band purple */
+.band-purple{background:var(--purple-l);}
+
+/* ── WI Card ── */
+.wcard{background:#fff;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:box-shadow .15s;}
+.wcard:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.whead{padding:12px 16px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;}
+.wnum{width:28px;height:28px;background:var(--blue);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;margin-top:1px;}
+.winfo{flex:1;}
+.wtitle{font-size:.93rem;font-weight:700;line-height:1.4;}
+.wppl{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;align-items:center;}
+.pchip{display:flex;align-items:center;gap:3px;font-size:.76rem;color:var(--muted);}
+.pav{width:18px;height:18px;background:#e0e7ff;color:#4338ca;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;flex-shrink:0;}
+.wbadge{font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:99px;flex-shrink:0;}
+.bdone{color:#15803d;background:#dcfce7;}
+.bpend{color:#92400e;background:#fef3c7;}
+
+/* ── Card Body ── */
+.wbody{display:none;}
+.wcard.open .wbody{display:block;}
+
+/* ── Bands ── */
+.band{padding:10px 16px;display:flex;align-items:flex-start;gap:10px;border-top:1px solid var(--border);}
+.band-blue{background:var(--blue-l);}
+.band-amber{background:var(--amber-l);}
+.band-green{background:var(--green-l);}
+.bico{font-size:.9rem;flex-shrink:0;margin-top:1px;width:20px;text-align:center;}
+.bcnt{flex:1;}
+.btitle{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
+.band-toggle{background:none;border:none;cursor:pointer;color:var(--muted);font-size:.7rem;padding:0 2px;font-family:inherit;letter-spacing:0;text-transform:none;font-weight:400;flex-shrink:0;}
+.band-toggle:hover{color:var(--blue);}
+.band.band-closed .bcnt>*:not(.btitle){display:none!important;}
+.band.band-closed .btitle{margin-bottom:0;}
+
+/* KPI inline */
+.krow{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed var(--blue-b);font-size:.84rem;}
+.krow:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.ktext{flex:1;color:#1e40af;font-weight:500;}
+.ktag{background:#fef3c7;color:#92400e;font-size:.68rem;padding:1px 6px;border-radius:99px;white-space:nowrap;}
+.ktgt{color:var(--green);font-size:.78rem;white-space:nowrap;}
+.kact{display:flex;gap:3px;flex-shrink:0;}
+
+/* Form pills */
+.fpills{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;}
+.fpill{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:8px;border:1px solid #c9973e;background:linear-gradient(180deg,#fffbf0 0%,#fef3c7 100%);box-shadow:0 3px 0 0 #b07830,0 2px 5px rgba(0,0,0,.12);font-size:.76rem;color:#92400e;text-decoration:none;cursor:pointer;font-family:inherit;transition:all .1s;font-weight:500;}
+.fpill:hover{background:linear-gradient(180deg,#fef9e0 0%,#fde68a 100%);box-shadow:0 4px 0 0 #b07830,0 3px 7px rgba(0,0,0,.14);}
+.fpill:active{transform:translateY(2px);box-shadow:0 0 0 0 #b07830,0 1px 2px rgba(0,0,0,.1);}
+.fpill-sum{background:linear-gradient(180deg,#f0fdf4 0%,#d1fae5 100%);border-color:#34d399;box-shadow:0 3px 0 0 #059669,0 2px 5px rgba(0,0,0,.1);color:#065f46;}
+.fpill-sum:hover{background:linear-gradient(180deg,#dcfce7 0%,#bbf7d0 100%);box-shadow:0 4px 0 0 #059669,0 3px 7px rgba(0,0,0,.12);}
+
+/* Exec entries */
+.eentry{font-size:.83rem;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed var(--green-b);}
+.eentry:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.emeta{font-size:.7rem;color:var(--muted);margin-bottom:2px;}
+.etext{white-space:pre-wrap;line-height:1.5;}
+.ep2{background:#fff;border:1px solid var(--green-b);border-radius:6px;padding:8px 10px;margin-bottom:6px;}
+.ep2-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+
+/* Exec add form */
+.eadd{background:var(--green-l);border-top:1px solid var(--green-b);padding:12px 16px;}
+.eadd-title{font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
+.erow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.erow input,.erow select{padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:.8rem;font-family:inherit;background:#fff;}
+.eta{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:inherit;resize:vertical;min-height:58px;margin-bottom:6px;}
+
+/* Move row */
+.mvrow{display:flex;align-items:center;gap:6px;padding:7px 16px;background:#f0fdf4;border-top:1px solid var(--green-b);flex-wrap:wrap;}
+.cblbl{display:flex;align-items:center;gap:4px;font-size:.76rem;cursor:pointer;}
+
+/* Footer */
+.wftr{padding:8px 16px;display:flex;justify-content:flex-end;gap:6px;border-top:1px solid var(--border);background:#fafafa;}
+.fbtn{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:.79rem;font-family:inherit;display:flex;align-items:center;gap:4px;transition:all .12s;}
+.fbtn:hover{background:#f1f5f9;border-color:#94a3b8;}
+.fbtn-p{background:var(--blue);color:#fff;border-color:var(--blue);}
+.fbtn-p:hover{background:#1d4ed8;}
+.fbtn-d{color:var(--red);}
+.fbtn-d:hover{background:var(--red-l);border-color:var(--red);}
+
+/* Planned panel */
+.ppanel{display:none;border-top:1px solid #e0e7ff;background:#f8f7ff;padding:14px 16px;}
+.ppanel.open{display:block;}
+.psec{margin-bottom:14px;}
+.psec-title{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.ptag{display:inline-flex;align-items:center;gap:3px;font-size:.78rem;padding:2px 8px;border-radius:99px;margin:2px;}
+
+/* Inline add rows */
+.arow{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;align-items:flex-start;}
+.arow input,.arow select,.arow textarea{padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:.79rem;font-family:inherit;}
+.arow textarea{resize:vertical;min-height:48px;flex:1;}
+
+/* Buttons */
+.btn{padding:4px 10px;border-radius:5px;border:none;cursor:pointer;font-size:.77rem;font-weight:600;font-family:inherit;}
+.btn-p{background:var(--blue);color:#fff;}
+.btn-p:hover{background:#1d4ed8;}
+.btn-d{background:var(--red-l);color:var(--red);}
+.btn-d:hover{background:#fee2e2;}
+.btn-o{background:#fff;border:1px solid var(--border);color:var(--text);}
+.btn-o:hover{background:#f1f5f9;}
+.btn-g{background:var(--green);color:#fff;}
+.btn-g:hover{background:#15803d;}
+.btn-sm{padding:2px 7px;font-size:.72rem;}
+.btn-add{display:flex;align-items:center;gap:3px;padding:4px 9px;border-radius:5px;border:1px dashed;cursor:pointer;font-size:.76rem;font-family:inherit;}
+
+/* Tables */
+.stbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.stbl th{background:#f8fafc;padding:5px 8px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;font-size:.72rem;color:var(--muted);}
+.stbl td{padding:5px 8px;border-bottom:1px solid #f1f5f9;vertical-align:top;line-height:1.4;}
+.stbl tr:last-child td{border-bottom:none;}
+
+/* Dashboard */
+#dview{display:none;}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px;}
+.dc{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;}
+.dbig{font-size:1.9rem;font-weight:700;line-height:1;}
+.dlbl{font-size:.77rem;color:var(--muted);margin-top:3px;}
+.brow{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;}
+.bouter{background:#e2e8f0;border-radius:99px;height:9px;overflow:hidden;}
+.binner{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),#15803d);transition:width .5s;}
+.bstats{font-size:.73rem;color:var(--muted);margin-top:4px;display:flex;gap:10px;}
+
+/* Loading/Empty */
+.ld{text-align:center;padding:32px;color:var(--muted);}
+.emp{text-align:center;padding:20px;color:var(--muted);font-size:.83rem;}
+.sp{display:inline-block;width:22px;height:22px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Toast */
+#toast{position:fixed;bottom:20px;right:20px;background:#1e293b;color:#fff;padding:10px 18px;border-radius:8px;font-size:.84rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:320px;}
+#toast.show{opacity:1;}
+
+/* Modal */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;}
+.mbg.open{display:flex;}
+.modal{background:#fff;border-radius:12px;padding:22px;max-width:510px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal h3{font-size:.98rem;font-weight:700;margin-bottom:12px;}
+.frow{margin-bottom:9px;}
+.frow label{display:block;font-size:.76rem;color:var(--muted);margin-bottom:2px;font-weight:500;}
+.frow input,.frow textarea,.frow select{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.84rem;font-family:inherit;}
+.frow textarea{resize:vertical;min-height:66px;}
+.mact{display:flex;gap:6px;margin-top:14px;justify-content:flex-end;}
+
+/* Sidebar resize handle */
+#sb-resize{position:fixed;left:calc(var(--sw) - 4px);top:0;bottom:0;width:8px;cursor:col-resize;z-index:200;}
+#sb-resize:hover,#sb-resize.dragging{background:rgba(99,102,241,.35);}
+
+/* Archived card */
+.wcard.arch-item{opacity:.5;filter:grayscale(.4);}
+.wcard.arch-item .whead{background:#f8f8f8;}
+
+/* Sidebar group actions */
+.sb-grp-actions{display:none;gap:2px;margin-left:2px;flex-shrink:0;}
+.sb-item:hover .sb-grp-actions{display:flex;}
+.sb-grp-btn{background:rgba(255,255,255,.12);border:none;color:#94a3b8;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:.68rem;line-height:1.6;font-family:inherit;}
+.sb-grp-btn:hover{background:rgba(255,255,255,.28);color:#e2e8f0;}
+.sb-add-grp{display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer;color:#64748b;font-size:.8rem;border-top:1px solid rgba(255,255,255,.07);margin-top:4px;transition:background .12s;}
+.sb-add-grp:hover{color:#94a3b8;background:var(--navy-h);}
+
+/* KPI archive */
+.krow-arch{opacity:.38;filter:grayscale(.5);}
+
+/* Responsive */
+@media(max-width:720px){
+  :root{--sw:0px;}
+  #sb{display:none;}
+  #main{margin-left:0;}
+  #sb-resize{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<nav id="sb">
+  <div id="sb-logo">
+    <div class="lg">📊</div>
+    <span>健康暨高齡照顧<br>研發中心 KPI填報</span>
+  </div>
+  <div class="sb-sec">分類</div>
+  <div id="sb-groups"><div style="padding:12px 16px;font-size:.75rem;color:#64748b">載入中…</div></div>
+  <div class="sb-add-grp" onclick="showGroupModal(null)">
+    <div class="sb-icon" style="background:rgba(255,255,255,.1);font-size:.85rem;width:24px;height:24px">＋</div>
+    <span>新增組別</span>
+  </div>
+</nav>
+
+<div id="sb-resize"></div>
+<!-- ── Main ── -->
+<div id="main">
+  <!-- Top Bar -->
+  <div id="topbar">
+    <span style="font-size:.77rem;color:var(--muted)">字體</span>
+    <button class="tb-btn" onclick="changeFs(-1)">A−</button>
+    <button class="tb-btn" onclick="changeFs(0)" title="重設">↺</button>
+    <button class="tb-btn" onclick="changeFs(1)">A+</button>
+    <div class="tb-div"></div>
+    <button class="tb-btn" onclick="showAddWI()">＋ 新增工作項目</button>
+    <button class="tb-btn" onclick="reloadItems()">↻ 重新整理</button>
+  </div>
+
+  <!-- Content -->
+  <div id="cnt">
+    <div id="ghdr" style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <h2 id="gtitle" style="flex:1;margin:0">載入中…</h2>
+        <div id="stats" style="display:flex;gap:5px;">
+          <div class="spill" onclick="toggleFill('')" id="scTotal"><span class="sblue" id="sT">─</span><span style="color:var(--muted);font-size:.72rem;font-weight:400"> 全部</span></div>
+          <div class="spill" onclick="toggleFill('filled')" id="scFilled">✅ <span class="sgreen" id="sF">─</span><span style="color:var(--muted);font-size:.72rem;font-weight:400"> 已填寫</span></div>
+          <div class="spill" onclick="toggleFill('unfilled')" id="scUnfilled">⬜ <span class="samber" id="sU">─</span><span style="color:var(--muted);font-size:.72rem;font-weight:400"> 未填寫</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="fbar">
+      <span class="flabel">🔍 負責人</span>
+      <div class="fsearch">
+        <input id="nameInput" placeholder="輸入姓名…" oninput="onNameInput(this.value)">
+      </div>
+      <span style="font-size:.74rem;color:var(--muted)">（或直接點卡片上的老師名字）</span>
+      <button class="btn btn-o btn-sm" onclick="clearFilters()" style="margin-left:auto">✕ 清除篩選</button>
+    </div>
+
+    <div id="wiList"><div class="ld"><div class="sp"></div><br>載入中…</div></div>
+    <div id="dview"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Group Modal -->
+<div class="mbg" id="groupModal">
+  <div class="modal" style="max-width:420px">
+    <h3 id="gModalTitle">新增組別</h3>
+    <input type="hidden" id="gModalId">
+    <div class="frow"><label>組別名稱</label><input id="gModalName" placeholder="e.g. 課程教學組"></div>
+    <div class="frow" style="display:flex;gap:10px">
+      <div style="flex:1"><label>圖示（emoji）</label><input id="gModalIcon" placeholder="📋"></div>
+      <div><label>顏色</label><br><input id="gModalColor" type="color" value="#4f46e5" style="width:56px;height:36px;padding:2px;border:1px solid var(--border);border-radius:6px;cursor:pointer;margin-top:2px"></div>
+    </div>
+    <div class="mact">
+      <button class="btn btn-o" onclick="closeModal('groupModal')">取消</button>
+      <button class="btn btn-p" onclick="submitGroupModal()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="mbg" id="exportModal">
+  <div class="modal" style="max-width:360px">
+    <h3>⬇ 匯出設定</h3>
+    <input type="hidden" id="expWiId">
+    <div class="frow">
+      <label>篩選年度</label>
+      <select id="expYear" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.84rem;font-family:inherit">
+        <option value="">全部年度</option>
+        <option value="115">115年</option>
+        <option value="116">116年</option>
+        <option value="117">117年</option>
+      </select>
+    </div>
+    <div class="frow">
+      <label>匯出項目</label>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:5px">
+        <label class="cblbl"><input type="checkbox" id="expKPI" checked> KPI 指標及達成記錄</label>
+        <label class="cblbl"><input type="checkbox" id="expPlanned" checked> 預計工作內容</label>
+        <label class="cblbl"><input type="checkbox" id="expExec" checked> 執行狀況（依月份排序）</label>
+      </div>
+    </div>
+    <div class="mact">
+      <button class="btn btn-o" onclick="closeModal('exportModal')">取消</button>
+      <button class="btn btn-p" onclick="submitExport()">⬇ 匯出試算表</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add WI Modal -->
+<div class="mbg" id="addWIModal">
+  <div class="modal">
+    <h3>新增工作項目</h3>
+    <div class="frow"><label>所屬組別</label>
+      <select id="wiGrp"><option value="">載入中…</option></select>
+    </div>
+    <div class="frow"><label>項次</label><input id="wiNo" placeholder="e.g. 12"></div>
+    <div class="frow"><label>工作項目名稱</label><textarea id="wiTitle" rows="3"></textarea></div>
+    <div class="frow"><label>執行期間</label><input id="wiPeriod" placeholder="e.g. 2026/2-2028/12"></div>
+    <div class="mact">
+      <button class="btn btn-o" onclick="closeModal('addWIModal')">取消</button>
+      <button class="btn btn-p" onclick="submitAddWI()">新增</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════ State ════
+let currentGroup = 1;
+let allItems = [], filterName = '', filterYear = '', filterFill = '', expandedId = null;
+let sidebarGroups = [];
+
+const ALL_NAMES = ['張怡雅','林志鴻','蔡金杏','簡麗瑜','吳美玲','陳妙絹','許瑜庭',
+                   '黃惠玲','鄭麗菁','蔡明芬','林淑棻','趙莉芬','王毅新','陳偉婷',
+                   '楊馥宇','林偉民','張麗娟','羅永桂','院長'];
+
+// ════ Init ════
+window.onload = () => { loadGroups(); loadItems(); };
+
+function loadItems() {
+  setLoading(true);
+  google.script.run
+    .withSuccessHandler(items => { allItems = items; setLoading(false); updateCounts(); render(); })
+    .withFailureHandler(e => { setLoading(false, e&&e.message?e.message:'伺服器無回應，請重試'); })
+    .getAllWorkItems();
+}
+function reloadItems() { loadItems(); }
+
+function loadGroups() {
+  const _fallback = [
+    {id:1,name:'課程、實習&行政&教學組',color:'#4f46e5',icon:'📚'},
+    {id:2,name:'師資培育(教學組簡麗瑜)',color:'#0891b2',icon:'👩‍🏫'},
+    {id:3,name:'產官學(產學組許瑜庭)',color:'#059669',icon:'💼'},
+    {id:4,name:'國際合作研究交流(研究組&行政教學)',color:'#d97706',icon:'🌏'},
+    {id:5,name:'環境設備(教學&產學組)',color:'#dc2626',icon:'🔧'},
+    {id:6,name:'其他行政(系院中心)',color:'#7c3aed',icon:'📋'}
+  ];
+  google.script.run
+    .withSuccessHandler(groups => {
+      sidebarGroups = (groups && groups.length) ? groups : _fallback;
+      if (!sidebarGroups.find(g=>g.id===currentGroup)) currentGroup = sidebarGroups[0].id;
+      buildSidebarGroups();
+      updateCounts();
+    })
+    .withFailureHandler(() => {
+      sidebarGroups = _fallback;
+      buildSidebarGroups();
+      updateCounts();
+    })
+    .getGroups();
+}
+
+function buildSidebarGroups() {
+  const container = document.getElementById('sb-groups');
+  if (!container) return;
+  container.innerHTML = sidebarGroups.map(g => `
+    <div class="sb-item${Number(g.id)===Number(currentGroup)?' active':''}" data-g="${g.id}" onclick="switchGroup(${g.id})">
+      <div class="sb-icon" style="background:${g.color||'#4f46e5'}">${g.icon||'📋'}</div>
+      <span class="sb-name">${esc(g.name)}</span>
+      <span class="sb-cnt" id="c${g.id}">─</span>
+      <div class="sb-grp-actions">
+        <button class="sb-grp-btn" onclick="event.stopPropagation();showGroupModalById(${g.id})" title="編輯">✎</button>
+        <button class="sb-grp-btn" onclick="event.stopPropagation();doArchiveGroup(${g.id})" title="封存">🗃</button>
+      </div>
+    </div>`).join('');
+  // Sync Add WI modal group select
+  const sel = document.getElementById('wiGrp');
+  if (sel) sel.innerHTML = sidebarGroups.map(g=>`<option value="${g.id}">${g.id} ${esc(g.name)}</option>`).join('');
+}
+
+function updateCounts() {
+  sidebarGroups.forEach(g => {
+    const el = document.getElementById('c'+g.id);
+    if (el) el.textContent = allItems.filter(i=>String(i.GroupID)===String(g.id)).length;
+  });
+}
+
+// ════ Render ════
+function render() {
+  const isDash = currentGroup === 0;
+  document.getElementById('wiList').style.display = isDash?'none':'block';
+  document.getElementById('dview').style.display  = isDash?'block':'none';
+  document.getElementById('stats').style.display  = isDash?'none':'flex';
+  document.getElementById('fbar').style.display   = isDash?'none':'flex';
+
+  if (isDash) { updateGHeader(); renderDash(); return; }
+  document.getElementById('ghdr').style.marginBottom='14px';
+
+  let items = allItems.filter(i=>String(i.GroupID)===String(currentGroup));
+  if (filterName) {
+    const q = filterName.toLowerCase();
+    items = items.filter(i =>
+      (i._teachers||[]).some(t=>t.toLowerCase().includes(q)) ||
+      (i._coOrgs||[]).some(t=>t.toLowerCase().includes(q))
+    );
+  }
+  if (filterYear) {
+    const roc = parseInt(filterYear);
+    if (!isNaN(roc)) {
+      const adYr = roc + 1911;
+      items = items.filter(i => {
+        if (!i.Period) return true;
+        const nums = (i.Period.match(/\d{4}/g)||[]).map(Number);
+        if (!nums.length) return true;
+        return adYr >= Math.min(...nums) && adYr <= Math.max(...nums);
+      });
+    }
+  }
+  if (filterFill==='filled')   items = items.filter(i=>i._hasFill);
+  if (filterFill==='unfilled') items = items.filter(i=>!i._hasFill);
+  if (!showArchived) items = items.filter(i=>!isArchived(i.ID));
+
+  const filled = items.filter(i=>i._hasFill).length;
+  document.getElementById('sT').textContent = items.length;
+  document.getElementById('sF').textContent = filled;
+  document.getElementById('sU').textContent = items.length - filled;
+  updateGHeader();
+
+  const list = document.getElementById('wiList');
+  if (!items.length) { list.innerHTML='<div class="emp">此條件下無工作項目</div>'; return; }
+  list.innerHTML = items.map((wi,i)=>buildCard(wi,i+1)).join('');
+  if (expandedId) {
+    const c = document.getElementById('wc_'+expandedId);
+    if (c) { c.classList.add('open'); loadDetail(expandedId); }
+  }
+}
+
+function updateGHeader() {
+  const g = sidebarGroups.find(g=>Number(g.id)===Number(currentGroup));
+  document.getElementById('gtitle').textContent = currentGroup===0 ? '數據儀表板' : (g?g.name:'');
+}
+
+// ════ Build Card ════
+function buildCard(wi, n) {
+  const badge = wi._hasFill
+    ? '<span class="wbadge bdone">✓ 已填寫</span>'
+    : '<span class="wbadge bpend">待填寫</span>';
+  const pav=`<span class="pav" style="background:#e0e7ff;color:#4338ca"><svg viewBox="0 0 20 20" fill="currentColor" width="11" height="11"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg></span>`;
+  const coav=`<span class="pav" style="background:#d1fae5;color:#065f46"><svg viewBox="0 0 20 20" fill="currentColor" width="11" height="11"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg></span>`;
+  const teachers=(wi._teachers||[]).slice(0,3);
+  const coOrgs=(wi._coOrgs||[]).slice(0,3);
+  const tChips=teachers.map(t=>`<span class="pchip" onclick="event.stopPropagation();setPerson('${esc(t)}')" style="cursor:pointer;text-decoration:underline dotted" title="篩選${esc(t)}">${pav}${t}</span>`).join('');
+  const cChips=coOrgs.map(t=>`<span class="pchip" onclick="event.stopPropagation();setPerson('${esc(t)}')" style="cursor:pointer;text-decoration:underline dotted;color:#065f46" title="篩選${esc(t)}">${coav}${t}</span>`).join('');
+  const ppl=[
+    teachers.length?`<span style="font-size:.68rem;color:var(--navy);font-weight:700">負責教師：</span>${tChips}`:'',
+    coOrgs.length?`<span style="font-size:.68rem;color:var(--navy);font-weight:700;margin-left:6px">協辦人員：</span>${cChips}`:'',
+    ...(wi._units||[]).slice(0,1).map(u=>`<span class="pchip">📋 ${esc(u)}</span>`),
+    wi.Period?`<span class="pchip">📅 ${esc(wi.Period)}</span>`:''
+  ].filter(Boolean).join('');
+
+  const isArch=isArchived(wi.ID);
+  return `
+  <div class="wcard${isArch?' arch-item':''}" id="wc_${wi.ID}">
+    <div class="whead" onclick="toggleCard('${wi.ID}')">
+      <div class="wnum">${wi.ItemNo||n}</div>
+      <div class="winfo">
+        <div class="wtitle">${esc(wi.Title)}${isArch?' <span style="font-size:.7rem;color:var(--muted)">[封存]</span>':''}</div>
+        <div class="wppl">${ppl}</div>
+      </div>
+      <button class="fbtn" style="flex-shrink:0;padding:3px 8px;font-size:.75rem;margin-top:1px" onclick="event.stopPropagation();openPeoplePanel('${wi.ID}')" title="人員管理">👤 人員</button>
+      ${badge}
+    </div>
+    <div class="wbody" id="wb_${wi.ID}">
+      <div id="wc2_${wi.ID}"><div class="ld" style="padding:16px"><div class="sp"></div></div></div>
+    </div>
+  </div>`;
+}
+
+function toggleCard(id) {
+  const c = document.getElementById('wc_'+id);
+  const wasOpen = c.classList.contains('open');
+  document.querySelectorAll('.wcard.open').forEach(x=>x.classList.remove('open'));
+  if (!wasOpen) { c.classList.add('open'); expandedId=id; loadDetail(id); }
+  else expandedId=null;
+}
+
+// ════ Detail ════
+function loadDetail(wiId) {
+  const cont = document.getElementById('wc2_'+wiId);
+  if (cont.dataset.loaded==='1') return;
+  google.script.run
+    .withSuccessHandler(d => {
+      if (!d) { cont.innerHTML='<div class="emp">載入失敗</div>'; return; }
+      cont.innerHTML = buildDetail(d);
+      cont.dataset.loaded='1';
+    })
+    .withFailureHandler(()=>{ cont.innerHTML='<div class="emp">載入失敗</div>'; })
+    .getWorkItemFull(wiId);
+}
+
+function buildDetail(d) {
+  const twoCol = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border)">
+      <div style="border-right:1px solid var(--border)">${buildPlannedBand(d,true)}</div>
+      <div>${buildKPIBand(d,true)}</div>
+    </div>`;
+  return twoCol + buildFormsBand(d) + buildExecBand(d) + buildExecAdd(d) + buildFooter(d) + buildPlanned(d);
+}
+
+// ── Planned Band (always visible) ──
+function buildPlannedBand(d, inner=false) {
+  const archP = getArchivedPlanned();
+  const visP  = (d.planned||[]).filter(p=>!archP.includes(p.ID));
+  const hidP  = (d.planned||[]).filter(p=>archP.includes(p.ID));
+  const prows = visP.map((p,i)=>`
+    <div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px dashed var(--purple-b);font-size:.82rem">
+      <span style="font-size:.73rem;font-weight:700;color:var(--purple);flex-shrink:0;margin-top:3px;min-width:18px">${i+1}.</span>
+      <div style="flex:1;line-height:1.55;white-space:pre-wrap">${esc(p.Content)}</div>
+      <span style="font-size:.72rem;color:var(--muted);white-space:nowrap;padding-top:2px">${p.PlannedDate||''} ${p.Year?p.Year+'年':''}</span>
+      <button class="btn btn-o btn-sm" onclick='event.stopPropagation();editPlanned(${JSON.stringify(p)})'>✎</button>
+      <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a" onclick="event.stopPropagation();togglePlannedArchive('${p.ID}','${d.ID}')" title="封存">🗃</button>
+      <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delPlanned('${p.ID}','${d.ID}')">✕</button>
+    </div>`).join('');
+  const hidRows = hidP.map(p=>`
+    <div style="display:flex;align-items:center;gap:6px;padding:3px 6px;background:rgba(0,0,0,.04);border-radius:5px;margin-bottom:3px;opacity:.45">
+      <span style="font-size:.77rem;flex:1;color:var(--muted)">🗃 ${esc(p.Content.substring(0,35))}${p.Content.length>35?'…':''} ${p.Year?p.Year+'年':''}</span>
+      <button class="btn btn-o btn-sm" onclick="event.stopPropagation();togglePlannedArchive('${p.ID}','${d.ID}')" style="font-size:.68rem">取消封存</button>
+    </div>`).join('');
+  return `<div class="band band-purple"${inner?' style="border-top:none;height:100%;box-sizing:border-box"':''}>
+    <div class="bico">📋</div>
+    <div class="bcnt">
+      <div class="btitle">預計工作內容<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▲</button></div>
+      <div style="height:180px;min-height:60px;max-height:600px;overflow-y:auto;margin-bottom:4px;padding-right:2px;resize:vertical;">
+        ${prows||(!hidP.length?'<span style="color:var(--muted);font-size:.8rem">尚無預計工作內容</span>':'')}
+        ${hidRows}
+      </div>
+      <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+        <textarea id="aPc2_${d.ID}" style="flex:1;min-width:140px;padding:5px 8px;border:1px solid var(--purple-b);border-radius:5px;font-size:.79rem;font-family:inherit;resize:vertical;min-height:80px;background:#fff" placeholder="新增預計工作內容…"></textarea>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <input id="aPd2_${d.ID}" style="width:88px;padding:5px 8px;border:1px solid var(--purple-b);border-radius:5px;font-size:.79rem;font-family:inherit;background:#fff" placeholder="預定時間">
+          <input id="aPy2_${d.ID}" style="width:88px;padding:5px 8px;border:1px solid var(--purple-b);border-radius:5px;font-size:.79rem;font-family:inherit;background:#fff" placeholder="年度">
+          <button class="btn btn-sm" style="background:var(--purple);color:#fff;border:none" onclick="event.stopPropagation();addPlanned2('${d.ID}')">新增</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── KPI Band ──
+function buildKPIBand(d, inner=false) {
+  const kpis = d.kpis||[];
+  const archivedKPIs = getArchivedKPIs();
+  const visibleKpis = kpis.filter(k => !archivedKPIs.includes(k.ID));
+  const hiddenCount = kpis.length - visibleKpis.length;
+  const rows = visibleKpis.map((k, idx) => {
+    const isMilestone = (k.TargetType||'number') === 'milestone';
+    const isYBool = k.IsYearBased === true || String(k.IsYearBased).toLowerCase() === 'true';
+    const kYearStr = String(k.Year || '');
+    const allowedYearsArr = (isYBool && kYearStr)
+      ? kYearStr.split(',').map(y=>y.trim()).filter(y=>y) : [];
+
+    // 達成記錄列（顯示年月＋達成值）
+    const achRows = (k.achievements||[]).map(a=>{
+      const aYear = String(a.Year||'').trim();
+      const aMonth = (a.Month!==null && a.Month!==undefined && a.Month!=='') ? String(a.Month) : '';
+      const datePart = (aYear ? aYear+'年' : '') + (aMonth ? aMonth+'月' : '');
+      const isWrong = allowedYearsArr.length>0 && aYear && !allowedYearsArr.includes(aYear);
+      const valStr = String(a.ActualValue||'').trim();
+      const emptyVal = (valStr==='' || valStr==='0');
+      return '<div style="display:flex;align-items:center;gap:5px;font-size:.76rem;padding:2px 0'
+        +(isWrong?';background:#fff1f2;border-radius:3px;padding:2px 6px':emptyVal?';background:#fffbeb;border-radius:3px;padding:2px 6px':'')+'">'
+        +'<span style="min-width:66px;color:'+(isWrong?'var(--red)':'var(--muted)')+'">'+( datePart||'─')+'</span>'
+        +(emptyVal
+          ? '<span style="color:var(--amber);font-size:.72rem">⚠️ 達成值未填，請刪除重填</span>'
+          : '<span style="font-weight:700;color:var(--text);font-size:.84rem">'+esc(valStr)+'</span>'
+        )
+        +(isWrong?'<span style="color:var(--red);font-size:.68rem;white-space:nowrap;margin-left:4px">⚠️年度不符不計入</span>':'')
+        +'<button class="btn btn-d btn-sm" style="margin-left:auto" onclick="event.stopPropagation();delKPIAch(\''+a.ID+'\',\''+d.ID+'\')">✕</button>'
+        +'</div>';
+    }).join('');
+
+    // 前端重新計算達成率（直接從原始資料算，不依賴後端快取）
+    const targetNum = parseFloat(k.TargetValue)||0;
+    let actualSum = 0;
+    let pct = null;
+    if (!isMilestone && targetNum>0) {
+      let forCalc = k.achievements||[];
+      if (isYBool && kYearStr) {
+        forCalc = forCalc.filter(a=>allowedYearsArr.includes(String(a.Year||'').trim()));
+      } else if (isYBool && !kYearStr) {
+        forCalc = []; // 分年度無特定年：由各年條形圖處理
+      }
+      if (forCalc.length>0) {
+        actualSum = forCalc.reduce((s,r)=>s+(parseFloat(r.ActualValue)||0),0);
+        pct = Math.min(Math.round(actualSum/targetNum*100),100);
+      }
+    }
+    if (isMilestone) pct = k.achievementPct; // 里程碑：保留後端值
+
+    const kpiC = p => p==null?'var(--muted)':p>=100?'var(--green)':p>=60?'var(--amber)':'var(--red)';
+    let progressBar = '';
+    if (isMilestone && pct) {
+      progressBar = '<div style="font-size:.75rem;color:var(--green);margin-top:3px">✓ '+esc(String(pct))+'</div>';
+    } else if (!isMilestone && k.yearlyAchievements && k.yearlyAchievements.length) {
+      // 分年度：每年獨立進度條（含 X/Y 顯示）
+      progressBar = '<div style="margin:5px 0 3px">'+k.yearlyAchievements.map(ya=>{
+        const c=kpiC(ya.pct);
+        return '<div style="margin-bottom:4px">'
+          +'<div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:1px">'
+          +'<span>'+ya.year+'年</span>'
+          +'<span style="font-weight:700;color:'+c+'">'+ya.actual+' / '+esc(String(k.TargetValue||'─'))+' = '+(ya.pct!=null?ya.pct+'%':'─')+'</span>'
+          +'</div>'
+          +'<div style="background:#dbeafe;border-radius:99px;height:5px;overflow:hidden">'
+          +'<div style="width:'+(ya.pct||0)+'%;height:100%;border-radius:99px;background:'+c+';transition:width .5s"></div>'
+          +'</div></div>';
+      }).join('')+'</div>';
+    } else if (!isMilestone && typeof pct==='number') {
+      const c=kpiC(pct);
+      progressBar = '<div style="margin:5px 0 2px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:2px">'
+        +'<span>達成率</span>'
+        +'<span style="font-weight:700;color:'+c+'">'+actualSum+' / '+esc(String(k.TargetValue))+' = '+pct+'%</span>'
+        +'</div>'
+        +'<div style="background:#dbeafe;border-radius:99px;height:7px;overflow:hidden">'
+        +'<div style="width:'+pct+'%;height:100%;border-radius:99px;background:'+c+';transition:width .5s"></div>'
+        +'</div></div>';
+    }
+
+    return `
+    <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--blue-b);last-child:border-bottom:none">
+      <div class="krow" style="border-bottom:none;margin-bottom:3px;padding-bottom:0">
+        <span class="ktext">🎯 ${esc(k.KPIText)}</span>
+        ${k.IsYearBased ? `<span style="display:inline-flex;gap:3px;align-items:center;flex-wrap:wrap;margin-left:4px"><span style="font-size:.69rem;color:var(--muted)">適用年度：</span>${(String(k.Year||'')).split(',').filter(y=>y.trim()).map(y=>`<span class="ktag">${y.trim()}年</span>`).join('')||'<span class="ktag">分年度</span>'}</span>` : ''}
+        <span class="ktgt">${k.TargetValue?'目標：'+esc(String(k.TargetValue))+(isMilestone?' (里程碑)':''):'未設定目標'}</span>
+        <div class="kact">
+          ${idx>0?`<button class="btn btn-o btn-sm" onclick="event.stopPropagation();moveKPIOrder('${k.ID}','${d.ID}','up')" title="上移">↑</button>`:''}
+          ${idx<visibleKpis.length-1?`<button class="btn btn-o btn-sm" onclick="event.stopPropagation();moveKPIOrder('${k.ID}','${d.ID}','down')" title="下移">↓</button>`:''}
+          <button class="btn btn-o btn-sm" onclick='event.stopPropagation();showEditKPI(${JSON.stringify(k)})'>✎</button>
+          <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a" onclick="event.stopPropagation();toggleKPIArchive('${k.ID}','${esc(k.KPIText)}','${d.ID}')" title="封存KPI">🗃</button>
+          <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delKPI('${k.ID}','${d.ID}')">✕</button>
+        </div>
+      </div>
+      ${progressBar}
+      ${achRows ? `<div style="background:rgba(255,255,255,.6);border-radius:5px;padding:5px 8px;margin-top:4px">${achRows}</div>` : ''}
+      <div style="background:#f0f9ff;border-radius:6px;padding:7px 8px;margin-top:5px">
+        <div style="font-size:.7rem;color:var(--blue);font-weight:700;margin-bottom:5px">➕ 新增達成記錄</div>
+        <div style="display:flex;gap:5px;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <div style="font-size:.67rem;color:var(--muted);margin-bottom:2px">★ ${isMilestone?'說明文字':'達成數量'}</div>
+            <input id="achV_${k.ID}" placeholder="${isMilestone?'說明':'填數字'}" style="width:90px;padding:4px 7px;border:2px solid var(--blue);border-radius:5px;font-size:.82rem;font-family:inherit;background:#fff">
+          </div>
+          <div>
+            <div style="font-size:.67rem;color:var(--muted);margin-bottom:2px">民國年</div>
+            <input id="achY_${k.ID}" placeholder="115" style="width:54px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:.78rem;font-family:inherit;background:#fff">
+          </div>
+          <div>
+            <div style="font-size:.67rem;color:var(--muted);margin-bottom:2px">月</div>
+            <input id="achMo_${k.ID}" placeholder="1-12" style="width:48px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:.78rem;font-family:inherit;background:#fff" oninput="validateMonth(this)" type="number" min="1" max="12">
+          </div>
+          <input type="hidden" id="achN_${k.ID}" value="">
+          <button class="btn btn-p btn-sm" style="height:29px" onclick="event.stopPropagation();addKPIAch('${k.ID}','${d.ID}','${esc(kYearStr)}',${isYBool})">記錄</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const archivedRows = kpis.filter(k => archivedKPIs.includes(k.ID)).map(k=>`
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;background:rgba(0,0,0,.04);border-radius:5px;margin-bottom:4px;opacity:.45">
+      <span style="font-size:.78rem;flex:1;color:var(--muted)">🗃 ${esc(k.KPIText)}</span>
+      <button class="btn btn-o btn-sm" onclick="event.stopPropagation();toggleKPIArchive('${k.ID}','${esc(k.KPIText)}','${d.ID}')" style="font-size:.68rem;opacity:.7">取消封存</button>
+    </div>`).join('');
+  return `
+  <div class="band band-blue"${inner?' style="border-top:none;height:100%;box-sizing:border-box"':''}>
+    <div class="bico">🎯</div>
+    <div class="bcnt">
+      <div class="btitle">KPI 指標<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▲</button></div>
+      <div style="height:220px;min-height:80px;max-height:700px;overflow-y:auto;padding-right:2px;resize:vertical;">
+        ${rows||(!archivedRows?'<span style="color:#94a3b8;font-size:.8rem">尚無KPI</span>':'')}
+        ${archivedRows}
+      </div>
+      <button class="btn-add" style="margin-top:4px;border-color:var(--blue-b);background:var(--blue-l);color:var(--blue)" onclick="event.stopPropagation();showAddKPI('${d.ID}')">＋ 新增KPI</button>
+    </div>
+  </div>`;
+}
+
+// ── Forms Band ──
+function buildFormsBand(d) {
+  const pairs = (d.forms||[]).map(f=>`
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:120px">
+      ${f.FormURL ? `<a class="fpill" href="${esc(f.FormURL)}" target="_blank" onclick="event.stopPropagation()">📄 ${esc(f.FormName)}</a>` : ''}
+      ${f.SummaryURL ? `<a class="fpill fpill-sum" href="${esc(f.SummaryURL)}" target="_blank" onclick="event.stopPropagation()">📊 ${esc(f.FormName)}彙整</a>` : ''}
+      ${!f.FormURL&&!f.SummaryURL ? `<span class="fpill" style="opacity:.5">${esc(f.FormName)}</span>` : ''}
+    </div>`).join('');
+  return `
+  <div class="band band-amber">
+    <div class="bico">📋</div>
+    <div class="bcnt">
+      <div class="btitle">關聯表單<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▲</button></div>
+      <div class="fpills">
+        ${pairs||'<span style="color:#92400e;font-size:.8rem;opacity:.6">尚無關聯表單</span>'}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Exec Band ──
+function buildExecBand(d) {
+  // 累積池：最新在前
+  const p1 = (d.pool1||[])
+    .sort((a,b)=>Number(b.Year)-Number(a.Year)||Number(b.Month)-Number(a.Month))
+    .map(p=>`<div class="eentry"><div class="emeta">${p.Year||''}年 ${p.Month||''}月</div><div class="etext" style="color:${p.TextColor||'#1e293b'}">${esc(p.Content)}</div></div>`).join('');
+
+  // 本月池：最新在前
+  const p2sorted = [...(d.pool2||[])].sort((a,b)=>Number(b.Year)-Number(a.Year)||Number(b.Month)-Number(a.Month));
+  const p2 = p2sorted.map(p=>`
+    <div class="ep2">
+      <div class="ep2-head">
+        <span class="emeta" style="color:#92400e">📝 本月 · ${p.Year||''}年${p.Month||''}月</span>
+        <div style="display:flex;gap:3px">
+          <button class="btn btn-o btn-sm" onclick='event.stopPropagation();editPool2Entry(${JSON.stringify(p)})'>✎</button>
+          <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delPool2('${p.ID}','${d.ID}')">✕</button>
+        </div>
+      </div>
+      <div class="etext" style="color:${p.TextColor||'#1e293b'}">${esc(p.Content)}</div>
+      <label class="cblbl" style="margin-top:5px"><input type="checkbox" value="${p.ID}" class="p2cb">月度執行紀錄歸檔</label>
+    </div>`).join('');
+
+  const mvRow = (d.pool2||[]).length
+    ? `<div class="mvrow"><button class="btn btn-g btn-sm" onclick="event.stopPropagation();moveSelected('${d.ID}')">✅ 月度執行紀錄歸檔</button><span style="font-size:.71rem;color:var(--muted)">（勾選後點此，不可復原）</span></div>`
+    : '';
+
+  const hasContent = p1 || p2;
+  return `
+  <div class="band band-green">
+    <div class="bico">✅</div>
+    <div class="bcnt">
+      <div class="btitle">執行狀況<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▲</button></div>
+      <div style="height:280px;min-height:80px;max-height:800px;overflow-y:auto;padding-right:2px;resize:vertical;">
+        ${hasContent ? '' : '<span style="color:#94a3b8;font-size:.8rem">尚無執行紀錄</span>'}
+        ${p2}${p1}
+      </div>
+    </div>
+  </div>${mvRow}`;
+}
+
+function buildExecAdd(d) {
+  return `
+  <div class="eadd">
+    <div class="eadd-title">＋ 新增本月執行狀況</div>
+    <div class="erow">
+      <input placeholder="民國年" id="p2y_${d.ID}" style="width:68px">
+      <input placeholder="月(1-12)" id="p2m_${d.ID}" style="width:64px" oninput="validateMonth(this)" type="number" min="1" max="12">
+      <select id="p2c_${d.ID}">
+        <option value="#1e293b">黑字</option>
+        <option value="#1d4ed8">藍字</option>
+        <option value="#dc2626" selected>紅字</option>
+        <option value="#15803d">綠字</option>
+        <option value="#d97706">橘字</option>
+      </select>
+    </div>
+    <textarea class="eta" id="p2t_${d.ID}" placeholder="填寫本月實際執行狀況…"></textarea>
+    <button class="btn btn-p btn-sm" onclick="event.stopPropagation();addPool2('${d.ID}')">新增</button>
+  </div>`;
+}
+
+function buildFooter(d) {
+  const isArch=isArchived(d.ID);
+  return `
+  <div class="wftr">
+    <button class="fbtn fbtn-d" onclick="event.stopPropagation();confirmDeleteWI('${d.ID}','${esc(d.Title)}')">🗑 刪除</button>
+    <button class="fbtn" onclick="event.stopPropagation();toggleArchive('${d.ID}','${esc(d.Title)}')" style="${isArch?'color:var(--amber)':''}">${isArch?'📤 取消封存':'🗃 封存'}</button>
+    <button class="fbtn" onclick="event.stopPropagation();showExportModal('${d.ID}')">⬇ 匯出</button>
+    <button class="fbtn fbtn-p" onclick="event.stopPropagation();showEditWI('${d.ID}','${esc(d.Title)}','${d.Period||''}')">✏ 修改</button>
+  </div>`;
+}
+
+function buildPlanned(d) {
+  // Teachers
+  const tChips = (d.teachers||[]).map(t=>`
+    <span class="ptag" style="background:#e0e7ff;color:#3730a3">
+      <span class="pav" style="background:#c7d2fe;color:#4338ca">${t.TeacherName.charAt(0)}</span>${t.TeacherName}
+      <button style="background:none;border:none;cursor:pointer;font-size:.7rem;color:#6366f1" onclick="event.stopPropagation();delTeacher('${t.ID}','${d.ID}')">✕</button>
+    </span>`).join('');
+  // CoOrgs
+  const cChips = (d.coOrgs||[]).map(c=>`
+    <span class="ptag" style="background:#d1fae5;color:#065f46">
+      ${c.PersonName}
+      <button style="background:none;border:none;cursor:pointer;font-size:.7rem;color:#059669" onclick="event.stopPropagation();delCoOrg('${c.ID}','${d.ID}')">✕</button>
+    </span>`).join('');
+  // Units
+  const uChips = (d.units||[]).map(u=>`
+    <span class="ptag" style="background:#f1f5f9;color:#475569">
+      ${esc(u.Unit)}
+      <button style="background:none;border:none;cursor:pointer;font-size:.7rem;color:#64748b" onclick="event.stopPropagation();delUnit('${u.ID}','${d.ID}')">✕</button>
+    </span>`).join('');
+  // Planned rows
+  const prows = (d.planned||[]).map(p=>`
+    <div style="display:flex;gap:6px;align-items:flex-start;padding:5px 0;border-bottom:1px dashed var(--border)">
+      <div style="flex:1;font-size:.81rem">${esc(p.Content)}</div>
+      <span style="font-size:.75rem;color:var(--muted);white-space:nowrap">${p.PlannedDate||'─'}</span>
+      <span style="font-size:.75rem;color:var(--muted);white-space:nowrap">${p.Year||''}年</span>
+      <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delPlanned('${p.ID}','${d.ID}')">✕</button>
+    </div>`).join('');
+
+  return `
+  <div class="ppanel" id="pp_${d.ID}">
+    <div class="psec">
+      <div class="psec-title">👤 負責教師</div>
+      <div>${tChips||'<span style="color:var(--muted);font-size:.78rem">尚無資料</span>'}</div>
+      <div class="arow" style="margin-top:5px">
+        <input placeholder="姓名" id="aT_${d.ID}" style="width:90px">
+        <input placeholder="年度" id="aTy_${d.ID}" style="width:65px">
+        <button class="btn btn-p btn-sm" onclick="event.stopPropagation();addTeacher('${d.ID}')">新增</button>
+      </div>
+    </div>
+    <div class="psec">
+      <div class="psec-title">👥 協辦人員</div>
+      <div>${cChips||'<span style="color:var(--muted);font-size:.78rem">尚無資料</span>'}</div>
+      <div class="arow" style="margin-top:5px">
+        <input placeholder="姓名" id="aC_${d.ID}" style="width:90px">
+        <input placeholder="年度" id="aCy_${d.ID}" style="width:65px">
+        <button class="btn btn-p btn-sm" onclick="event.stopPropagation();addCoOrg('${d.ID}')">新增</button>
+      </div>
+    </div>
+    <div class="psec">
+      <div class="psec-title">🏢 責任單位</div>
+      <div>${uChips||'<span style="color:var(--muted);font-size:.78rem">尚無資料</span>'}</div>
+      <div class="arow" style="margin-top:5px">
+        <input placeholder="單位名稱" id="aU_${d.ID}" style="width:150px">
+        <input placeholder="年度" id="aUy_${d.ID}" style="width:65px">
+        <button class="btn btn-p btn-sm" onclick="event.stopPropagation();addUnit('${d.ID}')">新增</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function togglePanel(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList ? el.classList.toggle('open') : (el.style.display = el.style.display==='none'?'block':'none');
+}
+
+// ════ Dashboard ════
+function renderDash() {
+  const dv = document.getElementById('dview');
+  dv.innerHTML = '<div class="ld"><div class="sp"></div><br>載入中…</div>';
+  google.script.run
+    .withSuccessHandler(data => {
+      const fillPct = data.total ? Math.round(data.filled/data.total*100) : 0;
+      const kpiColor = p => p==null?'var(--muted)':p>=100?'var(--green)':p>=60?'var(--amber)':'var(--red)';
+
+      const GPAL=[
+        {bg:'#eef2ff',accent:'#4f46e5',border:'#c7d2fe'},
+        {bg:'#ecfeff',accent:'#0891b2',border:'#a5f3fc'},
+        {bg:'#ecfdf5',accent:'#059669',border:'#a7f3d0'},
+        {bg:'#fffbeb',accent:'#d97706',border:'#fde68a'},
+        {bg:'#fef2f2',accent:'#dc2626',border:'#fecaca'},
+        {bg:'#f5f3ff',accent:'#7c3aed',border:'#ddd6fe'},
+      ];
+      const groupCards = data.groupStats.map((g,i) => {
+        const pal=GPAL[i]||GPAL[0];
+        const gFillPct = g.total ? Math.round(g.filled/g.total*100) : 0;
+        const kp = g.avgKpiPct;
+        const kpiDetails = (g.kpiDetails||[]);
+
+        const mainBar = kp!=null
+          ? `<div style="background:#e2e8f0;border-radius:99px;height:8px;overflow:hidden;margin:5px 0 2px">
+               <div style="width:${kp}%;height:100%;border-radius:99px;background:${kpiColor(kp)};transition:width .5s"></div></div>
+             <div style="font-size:.72rem;color:var(--muted);display:flex;gap:10px;margin-top:2px">
+               <span>KPI達成：<b style="color:${kpiColor(kp)}">${kp}%</b></span><span>填報：${gFillPct}%</span><span>共${g.total}項</span></div>`
+          : `<div style="background:#e2e8f0;border-radius:99px;height:8px;overflow:hidden;margin:5px 0 2px">
+               <div style="width:${gFillPct}%;height:100%;border-radius:99px;background:var(--green);transition:width .5s"></div></div>
+             <div style="font-size:.72rem;color:var(--muted);display:flex;gap:10px;margin-top:2px">
+               <span>填報：${gFillPct}%</span><span>${g.filled}已填</span><span>共${g.total}項</span></div>`;
+
+        const kpiList = kpiDetails.length ? `
+          <div style="margin-top:6px;border-top:1px dashed ${pal.border};padding-top:5px">
+            ${kpiDetails.map(k=>`
+              <div style="margin-bottom:5px">
+                <div style="display:flex;justify-content:space-between;font-size:.73rem;margin-bottom:2px;gap:4px">
+                  <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(k.text)}">${esc(k.text)}</span>
+                  <span style="white-space:nowrap;font-weight:700;color:${kpiColor(k.pct)}">${k.pct!=null ? k.pct+'%' : '─'}</span>
+                </div>
+                ${k.pct!=null
+                  ? `<div style="background:#e2e8f0;border-radius:99px;height:3px;overflow:hidden"><div style="width:${Math.min(k.pct,100)}%;height:100%;border-radius:99px;background:${kpiColor(k.pct)}"></div></div>`
+                  : `<div style="font-size:.68rem;color:var(--muted)">目標：${esc(String(k.target||''))}${k.targetType==='milestone'?' (里程碑)':''}</div>`
+                }
+              </div>`).join('')}
+          </div>` : '';
+
+        return `<div style="background:${pal.bg};border:1px solid ${pal.border};border-left:4px solid ${pal.accent};border-radius:10px;padding:12px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+            <span style="font-weight:700;font-size:.83rem;color:${pal.accent}">${esc(g.name)}</span>
+            ${kp!=null
+              ? `<span style="font-size:.77rem;font-weight:700;color:${kpiColor(kp)};background:#fff;padding:1px 8px;border-radius:99px;border:1px solid ${pal.border}">KPI ${kp}%</span>`
+              : `<span style="font-size:.71rem;color:var(--muted);background:#fff;padding:1px 8px;border-radius:99px;border:1px solid ${pal.border}">共${kpiDetails.length}項KPI</span>`}
+          </div>
+          ${mainBar}${kpiList}
+        </div>`;
+      });
+
+      dv.innerHTML = `
+        <div class="dgrid">
+          <div class="dc"><div class="dbig" style="color:var(--blue)">${data.total}</div><div class="dlbl">工作項目總數</div></div>
+          <div class="dc"><div class="dbig" style="color:var(--green)">${data.filled}</div><div class="dlbl">已填報</div></div>
+          <div class="dc"><div class="dbig" style="color:var(--amber)">${data.unfilled}</div><div class="dlbl">未填報</div></div>
+          <div class="dc"><div class="dbig" style="color:#7c3aed">${fillPct}%</div><div class="dlbl">整體填報率</div></div>
+        </div>
+        <div style="font-weight:700;margin-bottom:10px;font-size:.87rem">📊 各組 KPI 達成率</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;align-items:start">
+          <div>${groupCards.slice(0,3).join('')}</div>
+          <div>${groupCards.slice(3).join('')}</div>
+        </div>`;
+    })
+    .withFailureHandler(()=>toast('儀表板載入失敗','err'))
+    .getDashboard('','');
+}
+
+// ════ Group / Filter ════
+function switchGroup(g) {
+  currentGroup = Number(g);
+  document.querySelectorAll('#sb-groups .sb-item').forEach(el=>el.classList.toggle('active',Number(el.dataset.g)===currentGroup));
+  render();
+}
+function setPerson(n) {
+  filterName = filterName===n?'':n;
+  document.getElementById('nameInput').value = filterName;
+  if (filterName) toast('篩選：'+filterName+'的工作項目');
+  render();
+}
+function onNameInput(v) {
+  filterName=v.trim();
+  render();
+}
+
+function toggleFill(type) {
+  filterFill = filterFill===type && type!=='' ? '' : type;
+  ['scTotal','scFilled','scUnfilled'].forEach(id=>document.getElementById(id).style.outline='none');
+  if (filterFill==='filled')   document.getElementById('scFilled').style.outline='2px solid var(--green)';
+  if (filterFill==='unfilled') document.getElementById('scUnfilled').style.outline='2px solid var(--amber)';
+  render();
+}
+function clearFilters() {
+  filterName=filterYear=filterFill='';
+  document.getElementById('nameInput').value='';
+  ['scTotal','scFilled','scUnfilled'].forEach(id=>document.getElementById(id).style.outline='none');
+  render();
+}
+
+// ════ WI CRUD ════
+function showAddWI() { openModal('addWIModal'); }
+function submitAddWI() {
+  const data={GroupID:document.getElementById('wiGrp').value,ItemNo:document.getElementById('wiNo').value.trim(),Title:document.getElementById('wiTitle').value.trim(),Period:document.getElementById('wiPeriod').value.trim()};
+  if(!data.Title){toast('請填寫工作項目名稱','err');return;}
+  google.script.run.withSuccessHandler(()=>{toast('新增成功');closeModal('addWIModal');loadItems();}).withFailureHandler(e=>toast('失敗：'+e.message,'err')).saveWorkItem(data);
+}
+function showEditWI(id,title,period) {
+  const t=decodeHtml(title);
+  const nt=prompt('工作項目名稱',t);if(nt===null)return;
+  const np=prompt('執行期間',period);if(np===null)return;
+  const wi=allItems.find(i=>i.ID===id);if(!wi)return;
+  google.script.run.withSuccessHandler(()=>{toast('已更新');inv(id);reloadItems();}).withFailureHandler(e=>toast('失敗','err')).saveWorkItem({...wi,Title:nt,Period:np});
+}
+function confirmDeleteWI(id,title) {
+  if(!confirm('確定刪除「'+decodeHtml(title)+'」？\n此操作無法復原。'))return;
+  google.script.run.withSuccessHandler(()=>{toast('已刪除');loadItems();}).withFailureHandler(e=>toast('失敗','err')).deleteWorkItem(id);
+}
+
+// ════ KPI CRUD ════
+function showAddKPI(wiId) {
+  const text=prompt('KPI 內容');if(!text)return;
+  const targetTypeRaw=prompt('KPI類型：\n  number  → 數值目標（可計算達成率%）\n  milestone → 里程碑（文字，顯示最新說明）','number');
+  const targetType=(targetTypeRaw||'number').trim().toLowerCase()==='milestone'?'milestone':'number';
+  const target=prompt(targetType==='number'?'目標值（數字，如 3、80）':'里程碑說明（選填）','');
+  const isYear=confirm('是否分年度？');
+  const year=isYear?prompt('適用年度（民國年，如 115）',''):'';
+  const sumURL=prompt('彙整表URL（可留空）','')||'';
+  google.script.run.withSuccessHandler(()=>{toast('KPI新增成功');inv(wiId);}).withFailureHandler(e=>toast('失敗','err'))
+    .saveKPI({WorkItemID:wiId,KPIText:text,TargetValue:target,TargetType:targetType,IsYearBased:isYear,Year:year,SummaryURL:sumURL});
+}
+function showEditKPI(k) {
+  const text=prompt('KPI內容',k.KPIText);if(text===null)return;
+  const targetType=(k.TargetType||'number')==='milestone'?'milestone':'number';
+  const target=prompt(targetType==='number'?'目標值（數字）':'里程碑說明（選填）',k.TargetValue||'');
+  const isYear=confirm('是否分年度？');
+  const year=isYear?prompt('適用年度',k.Year||''):'';
+  google.script.run.withSuccessHandler(()=>{toast('已更新');inv(k.WorkItemID);}).withFailureHandler(e=>toast('失敗','err'))
+    .saveKPI({...k,KPIText:text,TargetValue:target,IsYearBased:isYear,Year:year});
+}
+function delKPI(id,wiId) {
+  if(!confirm('確定刪除此KPI？'))return;
+  google.script.run.withSuccessHandler(()=>{toast('已刪除');inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).deleteKPI(id);
+}
+
+// ════ KPI Achievement CRUD ════
+function addKPIAch(kpiId, wiId, kpiYear, isYearBased) {
+  const vEl=document.getElementById('achV_'+kpiId);
+  const yEl=document.getElementById('achY_'+kpiId);
+  const mEl=document.getElementById('achMo_'+kpiId);
+  const nEl=document.getElementById('achN_'+kpiId);
+  const val=(vEl&&vEl.value.trim())||'';
+  const year=(yEl&&yEl.value.trim())||'';
+  const month=(mEl&&mEl.value.trim())||'';
+  const note=(nEl&&nEl.value.trim())||'';
+  if(!val){toast('請填寫實際達成值','err');return;}
+  // ── 年度驗證（分年度KPI才做）──
+  if(isYearBased && kpiYear){
+    const allowed=String(kpiYear).split(',').map(y=>y.trim()).filter(y=>y);
+    if(allowed.length){
+      if(!year){
+        toast('⚠️ 此KPI適用年度為 '+kpiYear+' 年，請填入年度欄位','err');
+        if(yEl){yEl.style.border='1.5px solid var(--red)';yEl.focus();}
+        return;
+      }
+      if(!allowed.includes(year)){
+        toast('❌ 年度不符：此KPI適用 '+allowed.join('/')+'年，您輸入 '+year+' 年（不計入達成率）','err');
+        if(yEl){yEl.style.border='1.5px solid var(--red)';yEl.focus();}
+        return;
+      }
+    }
+  }
+  if(yEl)yEl.style.border='';
+  google.script.run
+    .withSuccessHandler(()=>{toast('達成記錄已儲存');if(vEl)vEl.value='';if(mEl)mEl.value='';if(nEl)nEl.value='';inv(wiId);})
+    .withFailureHandler(e=>toast('儲存失敗：'+(e.message||e),'err'))
+    .saveKPIAchievement({KPIID:kpiId,WorkItemID:wiId,Year:year,Month:month,ActualValue:val,Note:note});
+}
+function delKPIAch(achId, wiId) {
+  if(!confirm('確定刪除此達成記錄？'))return;
+  google.script.run
+    .withSuccessHandler(()=>{toast('已刪除');inv(wiId);})
+    .withFailureHandler(e=>toast('刪除失敗','err'))
+    .deleteKPIAchievement(achId);
+}
+
+// ════ People CRUD ════
+function addUnit(wiId){const n=document.getElementById('aU_'+wiId).value.trim();const y=document.getElementById('aUy_'+wiId).value.trim();if(!n){toast('請填寫單位名稱','err');return;}google.script.run.withSuccessHandler(()=>{toast('已新增');inv(wiId,true);}).withFailureHandler(e=>toast('失敗','err')).saveUnit({WorkItemID:wiId,Unit:n,Year:y});}
+function delUnit(id,wiId){google.script.run.withSuccessHandler(()=>{toast('已刪除');inv(wiId,true);}).withFailureHandler(e=>toast('失敗','err')).deleteUnit(id);}
+function addTeacher(wiId){const n=document.getElementById('aT_'+wiId).value.trim();const y=document.getElementById('aTy_'+wiId).value.trim();if(!n){toast('請填寫姓名','err');return;}google.script.run.withSuccessHandler(()=>{toast('已新增');inv(wiId,true);}).withFailureHandler(e=>toast('失敗','err')).saveTeacher({WorkItemID:wiId,TeacherName:n,Year:y});}
+function delTeacher(id,wiId){google.script.run.withSuccessHandler(()=>{toast('已刪除');inv(wiId,true);}).withFailureHandler(e=>toast('失敗','err')).deleteTeacher(id);}
+function addCoOrg(wiId){const n=document.getElementById('aC_'+wiId).value.trim();const y=document.getElementById('aCy_'+wiId).value.trim();if(!n){toast('請填寫姓名','err');return;}google.script.run.withSuccessHandler(()=>{toast('已新增');inv(wiId,true);}).withFailureHandler(e=>toast('失敗','err')).saveCoOrg({WorkItemID:wiId,PersonName:n,Year:y});}
+function delCoOrg(id,wiId){google.script.run.withSuccessHandler(()=>{toast('已刪除');inv(wiId,true);}).withFailureHandler(e=>toast('失敗','err')).deleteCoOrg(id);}
+
+// ════ Planned CRUD ════
+function editPlanned(p) {
+  const nc=prompt('修改預計工作內容',p.Content);if(nc===null)return;
+  const nd=prompt('預定時間',p.PlannedDate||'');if(nd===null)return;
+  const ny=prompt('適用年度',p.Year||'');if(ny===null)return;
+  google.script.run
+    .withSuccessHandler(()=>{toast('已更新');inv(p.WorkItemID);})
+    .withFailureHandler(e=>toast('修改失敗','err'))
+    .savePlanned({...p,Content:nc,PlannedDate:nd,Year:ny});
+}
+function addPlanned(wiId){const c=document.getElementById('aPc_'+wiId).value.trim();const d=document.getElementById('aPd_'+wiId).value.trim();const y=document.getElementById('aPy_'+wiId).value.trim();if(!c){toast('請填寫工作內容','err');return;}google.script.run.withSuccessHandler(()=>{toast('已新增');inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).savePlanned({WorkItemID:wiId,Content:c,PlannedDate:d,Year:y});}
+function addPlanned2(wiId){const c=document.getElementById('aPc2_'+wiId).value.trim();const d=document.getElementById('aPd2_'+wiId).value.trim();const y=document.getElementById('aPy2_'+wiId).value.trim();if(!c){toast('請填寫工作內容','err');return;}google.script.run.withSuccessHandler(()=>{toast('已新增');document.getElementById('aPc2_'+wiId).value='';inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).savePlanned({WorkItemID:wiId,Content:c,PlannedDate:d,Year:y});}
+function delPlanned(id,wiId){if(!confirm('確定刪除？'))return;google.script.run.withSuccessHandler(()=>{toast('已刪除');inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).deletePlanned(id);}
+
+// ════ Pool CRUD ════
+function addPool2(wiId) {
+  const content=document.getElementById('p2t_'+wiId).value.trim();
+  const year=document.getElementById('p2y_'+wiId).value.trim();
+  const month=document.getElementById('p2m_'+wiId).value.trim();
+  const color=document.getElementById('p2c_'+wiId).value;
+  if(!content){toast('請填寫執行狀況內容','err');return;}
+  google.script.run.withSuccessHandler(()=>{toast('已新增');document.getElementById('p2t_'+wiId).value='';inv(wiId,true);}).withFailureHandler(e=>toast('失敗','err')).saveToPool2({WorkItemID:wiId,Year:year,Month:month,Content:content,TextColor:color});
+}
+function editPool2Entry(p) {
+  const nc=prompt('修改執行狀況',p.Content);if(nc===null)return;
+  google.script.run.withSuccessHandler(()=>{toast('已更新');inv(p.WorkItemID);}).withFailureHandler(e=>toast('失敗','err')).saveToPool2({...p,Content:nc});
+}
+function delPool2(id,wiId){if(!confirm('確定刪除？'))return;google.script.run.withSuccessHandler(()=>{toast('已刪除');inv(wiId,true);}).withFailureHandler(e=>toast('失敗','err')).deleteFromPool2(id);}
+function moveSelected(wiId) {
+  const cbs=document.querySelectorAll(`#wc2_${wiId} .p2cb:checked`);
+  const ids=[...cbs].map(c=>c.value);
+  if(!ids.length){toast('請先勾選要轉入的紀錄','err');return;}
+  if(!confirm(`確定將 ${ids.length} 筆轉入累積池？不可復原。`))return;
+  google.script.run.withSuccessHandler(()=>{toast('已轉入');inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).moveToPool1(ids);
+}
+
+// ════ Forms CRUD ════
+function addForm(wiId){const n=document.getElementById('aFn_'+wiId).value.trim();const u=document.getElementById('aFu_'+wiId).value.trim();const s=document.getElementById('aFs_'+wiId).value.trim();if(!n){toast('請填寫表單名稱','err');return;}google.script.run.withSuccessHandler(()=>{toast('已新增');inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).saveForm({WorkItemID:wiId,FormName:n,FormURL:u,SummaryURL:s});}
+function delForm(id,wiId){google.script.run.withSuccessHandler(()=>{toast('已刪除');inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).deleteForm(id);}
+
+// ════ Export ════
+function doExport(wiId){
+  toast('正在匯出…');
+  google.script.run
+    .withSuccessHandler(r=>{
+      if(r.success){
+        const t=document.getElementById('toast');
+        t.innerHTML='✅ 匯出完成 &nbsp;<a href="'+r.url+'" target="_blank" style="color:#93c5fd;text-decoration:underline">→ 點此開啟試算表</a>';
+        t.style.background='#1e293b';
+        t.style.pointerEvents='auto';
+        t.classList.add('show');
+        setTimeout(()=>{t.classList.remove('show');t.style.pointerEvents='none';},12000);
+      }else toast('匯出失敗','err');
+    })
+    .withFailureHandler(e=>toast('匯出失敗','err'))
+    .exportToSheet(wiId);
+}
+function doExportAll(){toast('此功能開發中','err');}
+
+// ════ Group Management ════
+function showGroupModal(g) {
+  // g can be null (new) or a group object
+  document.getElementById('gModalTitle').textContent = g ? '編輯組別' : '新增組別';
+  document.getElementById('gModalId').value = g ? g.id : '';
+  document.getElementById('gModalName').value = g ? (g.name||'') : '';
+  document.getElementById('gModalIcon').value = g ? (g.icon||'📋') : '📋';
+  document.getElementById('gModalColor').value = g ? (g.color||'#4f46e5') : '#4f46e5';
+  openModal('groupModal');
+}
+function showGroupModalById(gId) {
+  const g = sidebarGroups.find(x=>Number(x.id)===Number(gId));
+  showGroupModal(g||null);
+}
+function submitGroupModal() {
+  const id=document.getElementById('gModalId').value;
+  const name=document.getElementById('gModalName').value.trim();
+  const icon=document.getElementById('gModalIcon').value.trim()||'📋';
+  const color=document.getElementById('gModalColor').value||'#4f46e5';
+  if(!name){toast('請填寫組別名稱','err');return;}
+  const data={Name:name,Icon:icon,Color:color};
+  if(id) data.ID=Number(id);
+  google.script.run
+    .withSuccessHandler(r=>{toast(id?'已更新組別':'已新增組別');closeModal('groupModal');loadGroups();})
+    .withFailureHandler(e=>toast('儲存失敗','err'))
+    .saveGroup(data);
+}
+function doArchiveGroup(gId) {
+  const g=sidebarGroups.find(x=>Number(x.id)===Number(gId));
+  const name=g?g.name:'此組別';
+  if(!confirm(`確定封存組別「${name}」？封存後此組別將從側欄隱藏。`))return;
+  google.script.run
+    .withSuccessHandler(()=>{toast('已封存組別');if(Number(currentGroup)===Number(gId)){currentGroup=sidebarGroups.find(g=>Number(g.id)!==Number(gId))?.id||1;}loadGroups();})
+    .withFailureHandler(e=>toast('操作失敗','err'))
+    .archiveGroup(gId);
+}
+
+// ════ KPI Reorder ════
+function moveKPIOrder(kpiId, wiId, direction){
+  google.script.run
+    .withSuccessHandler(()=>{toast('順序已更新');inv(wiId);})
+    .withFailureHandler(e=>toast('更新失敗','err'))
+    .moveKPI(kpiId, direction);
+}
+
+// ════ Archive ════
+let showArchived=false;
+function getArchived(){return JSON.parse(localStorage.getItem('kpi_arch')||'[]');}
+function isArchived(id){return getArchived().includes(id);}
+function toggleArchive(wiId,title){
+  const a=getArchived(), isArch=a.includes(wiId);
+  if(!confirm(isArch?`取消封存「${title}」？`:`封存「${title}」？\n封存後此工作項目將隱藏，可點「🗃 封存」切換顯示`))return;
+  localStorage.setItem('kpi_arch',JSON.stringify(isArch?a.filter(x=>x!==wiId):[...a,wiId]));
+  reloadItems();
+}
+function toggleShowArchived(){
+  showArchived=!showArchived;
+  document.getElementById('archBtn').classList.toggle('on',showArchived);
+  reloadItems();
+}
+
+// ════ Planned Archive ════
+function getArchivedPlanned(){return JSON.parse(localStorage.getItem('kpi_planned_arch')||'[]');}
+function togglePlannedArchive(pId,wiId){
+  const a=getArchivedPlanned(),isArch=a.includes(pId);
+  if(!confirm(isArch?'取消封存此預計工作內容？':'確定封存此項目？封存後縮小顯示'))return;
+  localStorage.setItem('kpi_planned_arch',JSON.stringify(isArch?a.filter(x=>x!==pId):[...a,pId]));
+  inv(wiId);
+}
+
+// ════ Export Modal ════
+function showExportModal(wiId){
+  document.getElementById('expWiId').value=wiId;
+  openModal('exportModal');
+}
+function submitExport(){
+  const wiId=document.getElementById('expWiId').value;
+  const year=document.getElementById('expYear').value;
+  const sections=[];
+  if(document.getElementById('expKPI').checked)sections.push('kpi');
+  if(document.getElementById('expPlanned').checked)sections.push('planned');
+  if(document.getElementById('expExec').checked)sections.push('exec');
+  if(!sections.length){toast('請至少選擇一個匯出項目','err');return;}
+  closeModal('exportModal');
+  toast('正在匯出…');
+  google.script.run
+    .withSuccessHandler(r=>{
+      if(r.success){
+        const t=document.getElementById('toast');
+        t.innerHTML='✅ 匯出完成 &nbsp;<a href="'+r.url+'" target="_blank" style="color:#93c5fd;text-decoration:underline">→ 點此開啟試算表</a>';
+        t.style.background='#1e293b';t.style.pointerEvents='auto';
+        t.classList.add('show');
+        setTimeout(()=>{t.classList.remove('show');t.style.pointerEvents='none';},12000);
+      }else toast('匯出失敗','err');
+    })
+    .withFailureHandler(()=>toast('匯出失敗','err'))
+    .exportToSheet(wiId,{year,sections});
+}
+
+// ════ KPI-level Archive ════
+function getArchivedKPIs(){return JSON.parse(localStorage.getItem('kpi_kpi_arch')||'[]');}
+function isKPIArchived(id){return getArchivedKPIs().includes(id);}
+function toggleKPIArchive(kpiId,text,wiId){
+  const a=getArchivedKPIs(),isArch=a.includes(kpiId);
+  if(!confirm(isArch?'取消封存此KPI？':`封存「${text.substring(0,25)}…」？\n封存後此KPI將隱藏`))return;
+  localStorage.setItem('kpi_kpi_arch',JSON.stringify(isArch?a.filter(x=>x!==kpiId):[...a,kpiId]));
+  inv(wiId);
+}
+function unarchiveAllKPIs(ids,wiId){
+  const a=getArchivedKPIs();
+  localStorage.setItem('kpi_kpi_arch',JSON.stringify(a.filter(x=>!ids.includes(x))));
+  inv(wiId);
+}
+
+// ════ Open People Panel ════
+function openPeoplePanel(wiId){
+  const card=document.getElementById('wc_'+wiId);
+  const wasOpen=card.classList.contains('open');
+  if(!wasOpen){
+    document.querySelectorAll('.wcard.open').forEach(x=>x.classList.remove('open'));
+    card.classList.add('open');
+    expandedId=wiId;
+    const cont=document.getElementById('wc2_'+wiId);
+    if(cont.dataset.loaded==='1'){setTimeout(()=>togglePanel('pp_'+wiId),30);}
+    else{
+      google.script.run
+        .withSuccessHandler(d=>{
+          if(!d){cont.innerHTML='<div class="emp">載入失敗</div>';return;}
+          cont.innerHTML=buildDetail(d);
+          cont.dataset.loaded='1';
+          setTimeout(()=>togglePanel('pp_'+wiId),50);
+        })
+        .withFailureHandler(()=>{cont.innerHTML='<div class="emp">載入失敗</div>';})
+        .getWorkItemFull(wiId);
+    }
+  }else{
+    togglePanel('pp_'+wiId);
+  }
+}
+
+// ════ Sidebar Resize ════
+(function(){
+  const h=document.getElementById('sb-resize');
+  if(!h)return;
+  let drag=false;
+  h.addEventListener('mousedown',e=>{drag=true;h.classList.add('dragging');document.body.style.userSelect='none';document.body.style.cursor='col-resize';e.preventDefault();});
+  document.addEventListener('mousemove',e=>{
+    if(!drag)return;
+    const w=Math.min(Math.max(e.clientX,120),440);
+    document.documentElement.style.setProperty('--sw',w+'px');
+    document.getElementById('sb').style.width=w+'px';
+    h.style.left=(w-4)+'px';
+    document.getElementById('main').style.marginLeft=w+'px';
+  });
+  document.addEventListener('mouseup',()=>{
+    if(!drag)return;
+    drag=false;h.classList.remove('dragging');
+    document.body.style.userSelect='';document.body.style.cursor='';
+  });
+})();
+
+// ════ Utils ════
+// reloadList=true 才重載側欄卡片清單（人員/池操作需要，KPI/預計/表單不需要）
+function inv(wiId, reloadList) {
+  const cont=document.getElementById('wc2_'+wiId);
+  if(cont){cont.dataset.loaded='0';cont.innerHTML='<div class="ld" style="padding:14px"><div class="sp"></div></div>';}
+  loadDetail(wiId);
+  if(reloadList===true) loadItems();
+}
+// 收合/展開 band 區塊
+function toggleBand(btn){
+  const band=btn.closest('.band');
+  const closed=band.classList.toggle('band-closed');
+  btn.textContent=closed?'▼':'▲';
+}
+function validateMonth(el){
+  const v=el.value.replace(/[^0-9]/g,'');
+  const n=parseInt(v,10);
+  if(!v){el.value='';return;}
+  if(isNaN(n)||n<1||n>12){el.style.border='1.5px solid var(--red)';el.title='請輸入 1–12 的數字';}
+  else{el.style.border='';el.title='';el.value=String(n);}
+}
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function decodeHtml(s){const t=document.createElement('textarea');t.innerHTML=s;return t.value;}
+function toast(msg,type){const el=document.getElementById('toast');el.textContent=msg;el.style.background=type==='err'?'#dc2626':'#1e293b';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3000);}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function setLoading(on,errMsg){
+  const el=document.getElementById('wiList');
+  if(!el)return;
+  if(on){el.innerHTML='<div class="ld"><div class="sp"></div><br>載入中…</div>';}
+  else if(errMsg){el.innerHTML='<div class="ld" style="color:var(--red)">⚠️ 載入失敗：'+esc(errMsg)+'<br><br><button class="btn btn-o" onclick="loadItems()">↻ 重試</button></div>';}
+  // else: render() will overwrite the content itself
+}
+let _fs=15;
+function changeFs(d){
+  if(d===0)_fs=15;else _fs=Math.min(Math.max(_fs+d,12),22);
+  document.documentElement.style.fontSize=_fs+'px';
+  document.documentElement.style.setProperty('--fs',_fs+'px');
+  document.body.style.fontSize=_fs+'px';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code 產生器</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Microsoft JhengHei', sans-serif; background: #f0f4f8; display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; padding: 30px 16px; }
+.card { background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,.1); padding: 32px; max-width: 480px; width: 100%; }
+h1 { font-size: 1.3rem; color: #2d2420; margin-bottom: 6px; }
+.sub { font-size: .85rem; color: #8aacbc; margin-bottom: 24px; }
+label { display: block; font-size: .82rem; font-weight: 600; color: #5a6a7a; margin-bottom: 6px; margin-top: 16px; }
+input, textarea {
+  width: 100%; padding: 11px 13px; border: 1.5px solid #dde4ec;
+  border-radius: 9px; font-size: .95rem; font-family: inherit; color: #2d2420;
+  background: #fafbfc;
+}
+input:focus, textarea:focus { outline: none; border-color: #4a9e78; }
+textarea { resize: vertical; min-height: 80px; }
+.gen-btn {
+  width: 100%; margin-top: 20px; padding: 13px;
+  background: linear-gradient(145deg, #5cb88e, #4a9e78);
+  color: #fff; border: none; border-radius: 10px;
+  font-size: 1rem; font-weight: 700; font-family: inherit; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(74,158,120,.35);
+}
+.gen-btn:hover { filter: brightness(1.05); }
+#result { margin-top: 28px; display: none; text-align: center; }
+#qrImg { width: 220px; height: 220px; border: 3px solid #e0e8f0; border-radius: 12px; padding: 10px; background: #fff; }
+.event-label { margin-top: 12px; font-size: 1rem; font-weight: 700; color: #2d2420; }
+.url-display { margin-top: 8px; font-size: .75rem; color: #8aacbc; word-break: break-all; }
+.print-btn {
+  margin-top: 16px; padding: 10px 24px;
+  border: 1.5px solid #4a9e78; border-radius: 8px;
+  color: #4a9e78; background: #fff; font-family: inherit;
+  font-size: .9rem; cursor: pointer; font-weight: 600;
+}
+.print-btn:hover { background: #d4ede2; }
+.hint { font-size: .78rem; color: #aab8c4; margin-top: 10px; line-height: 1.6; }
+
+@media print {
+  body { background: #fff; padding: 0; }
+  .card { box-shadow: none; max-width: 100%; }
+  .no-print { display: none !important; }
+  #result { display: block !important; }
+  #qrImg { width: 280px; height: 280px; }
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📱 QR Code 產生器</h1>
+  <p class="sub">產生簽到頁面的 QR Code，供學員掃描使用</p>
+
+  <div class="no-print">
+    <label>簽到頁面網址 *</label>
+    <input type="url" id="urlInput" placeholder="例：https://yourname.github.io/signin/index.html" value="https://nicole-hsu.github.io/sign-in-system/index.html">
+
+    <label>活動名稱</label>
+    <input type="text" id="nameInput" placeholder="例：照顧服務員術科培訓研討會" value="照顧服務員術科培訓研討會">
+
+    <label>活動日期 / 地點</label>
+    <input type="text" id="dateInput" placeholder="例：2026年6月2日｜台北市立聯合醫院">
+
+    <label>備註說明（印在 QR Code 下方）</label>
+    <textarea id="noteInput" placeholder="請用手機掃描 QR Code 完成報到，填寫資料後以手寫方式完成簽名。">請用手機掃描 QR Code 完成報到
+填寫資料後以手寫方式完成簽名</textarea>
+
+    <button class="gen-btn" onclick="generate()">產生 QR Code</button>
+  </div>
+
+  <div id="result">
+    <img id="qrImg" src="" alt="QR Code">
+    <div class="event-label" id="resName"></div>
+    <div class="url-display" id="resDate"></div>
+    <div class="url-display" id="resNote" style="color:#5a6a7a;font-size:.85rem;margin-top:8px;white-space:pre-line;"></div>
+    <div class="url-display" id="resUrl"></div>
+    <div class="no-print">
+      <button class="print-btn" onclick="window.print()">🖨 列印此頁</button>
+    </div>
+    <p class="hint no-print">
+      列印後剪下貼於報到桌，或投影至螢幕供學員掃描。<br>
+      建議同時準備備用的紙本簽到表。
+    </p>
+  </div>
+</div>
+
+<script>
+function generate() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { alert('請填寫簽到頁面網址'); return; }
+
+  const name = document.getElementById('nameInput').value.trim();
+  const date = document.getElementById('dateInput').value.trim();
+  const note = document.getElementById('noteInput').value.trim();
+
+  // 使用 Google Charts API 產生 QR Code（無需安裝套件）
+  const qrUrl = `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(url)}&choe=UTF-8&chld=H|1`;
+  document.getElementById('qrImg').src = qrUrl;
+  document.getElementById('resName').textContent = name;
+  document.getElementById('resDate').textContent = date;
+  document.getElementById('resNote').textContent = note;
+  document.getElementById('resUrl').textContent = url;
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
