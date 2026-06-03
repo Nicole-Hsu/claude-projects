@@ -103,10 +103,11 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
 .band-green{background:var(--green-l);}
 .bico{font-size:.9rem;flex-shrink:0;margin-top:1px;width:20px;text-align:center;}
 .bcnt{flex:1;}
-.btitle{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
+.btitle{font-size:.92rem;font-weight:700;color:var(--blue);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
 .band-toggle{background:none;border:none;cursor:pointer;color:var(--muted);font-size:.7rem;padding:0 2px;font-family:inherit;letter-spacing:0;text-transform:none;font-weight:400;flex-shrink:0;}
 .band-toggle:hover{color:var(--blue);}
-.band.band-closed .bcnt>*:not(.btitle){display:none!important;}
+.band.band-closed .bcnt>*{display:none!important;}
+.band.band-closed .bcnt>.btitle{display:flex!important;}
 .band.band-closed .btitle{margin-bottom:0;}
 
 /* KPI inline */
@@ -546,6 +547,8 @@ function loadDetail(wiId) {
       if (!d) { cont.innerHTML='<div class="emp">載入失敗</div>'; return; }
       cont.innerHTML = buildDetail(d);
       cont.dataset.loaded='1';
+      // 強制套用閉合狀態（CSS 備援）
+      cont.querySelectorAll('.band.band-closed .bcnt>*:not(.btitle)').forEach(el=>el.style.display='none');
     })
     .withFailureHandler(()=>{ cont.innerHTML='<div class="emp">載入失敗</div>'; })
     .getWorkItemFull(wiId);
@@ -577,10 +580,10 @@ function buildPlannedBand(d, inner=false) {
       <span style="font-size:.77rem;flex:1;color:var(--muted)">🗃 ${esc(p.Content.substring(0,35))}${p.Content.length>35?'…':''} ${p.Year?p.Year+'年':''}</span>
       <button class="btn btn-o btn-sm" onclick="event.stopPropagation();togglePlannedArchive('${p.ID}','${d.ID}')" style="font-size:.68rem">取消封存</button>
     </div>`).join('');
-  return `<div class="band band-purple"${inner?' style="border-top:none;height:100%;box-sizing:border-box"':''}>
+  return `<div class="band band-purple band-closed"${inner?' style="border-top:none;height:100%;box-sizing:border-box"':''}>
     <div class="bico">📋</div>
     <div class="bcnt">
-      <div class="btitle">預計工作內容<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▲</button></div>
+      <div class="btitle">預計工作內容<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▼</button></div>
       <div style="height:180px;min-height:60px;max-height:600px;overflow-y:auto;margin-bottom:4px;padding-right:2px;resize:vertical;">
         ${prows||(!hidP.length?'<span style="color:var(--muted);font-size:.8rem">尚無預計工作內容</span>':'')}
         ${hidRows}
@@ -718,10 +721,10 @@ function buildKPIBand(d, inner=false) {
       <button class="btn btn-o btn-sm" onclick="event.stopPropagation();toggleKPIArchive('${k.ID}','${esc(k.KPIText)}','${d.ID}')" style="font-size:.68rem;opacity:.7">取消封存</button>
     </div>`).join('');
   return `
-  <div class="band band-blue"${inner?' style="border-top:none;height:100%;box-sizing:border-box"':''}>
+  <div class="band band-blue band-closed"${inner?' style="border-top:none;height:100%;box-sizing:border-box"':''}>
     <div class="bico">🎯</div>
     <div class="bcnt">
-      <div class="btitle">KPI 指標<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▲</button></div>
+      <div class="btitle">KPI 指標<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▼</button></div>
       <div style="height:220px;min-height:80px;max-height:700px;overflow-y:auto;padding-right:2px;resize:vertical;">
         ${rows||(!archivedRows?'<span style="color:#94a3b8;font-size:.8rem">尚無KPI</span>':'')}
         ${archivedRows}
@@ -740,10 +743,10 @@ function buildFormsBand(d) {
       ${!f.FormURL&&!f.SummaryURL ? `<span class="fpill" style="opacity:.5">${esc(f.FormName)}</span>` : ''}
     </div>`).join('');
   return `
-  <div class="band band-amber">
+  <div class="band band-amber band-closed">
     <div class="bico">📋</div>
     <div class="bcnt">
-      <div class="btitle">關聯表單<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▲</button></div>
+      <div class="btitle">關聯表單<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▼</button></div>
       <div class="fpills">
         ${pairs||'<span style="color:#92400e;font-size:.8rem;opacity:.6">尚無關聯表單</span>'}
       </div>
@@ -779,10 +782,10 @@ function buildExecBand(d) {
 
   const hasContent = p1 || p2;
   return `
-  <div class="band band-green">
+  <div class="band band-green band-closed">
     <div class="bico">✅</div>
     <div class="bcnt">
-      <div class="btitle">執行狀況<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▲</button></div>
+      <div class="btitle">執行狀況<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▼</button></div>
       <div style="height:150px;min-height:60px;max-height:800px;overflow-y:auto;padding-right:2px;resize:vertical;">
         ${hasContent ? '' : '<span style="color:#94a3b8;font-size:.8rem">尚無執行紀錄</span>'}
         ${p2}${p1}
@@ -1316,8 +1319,16 @@ function inv(wiId, reloadList) {
 // 收合/展開 band 區塊
 function toggleBand(btn){
   const band=btn.closest('.band');
+  const bcnt=band.querySelector('.bcnt');
   const closed=band.classList.toggle('band-closed');
   btn.textContent=closed?'▼':'▲';
+  if(bcnt){
+    Array.from(bcnt.children).forEach(child=>{
+      if(!child.classList.contains('btitle')){
+        child.style.display=closed?'none':'';
+      }
+    });
+  }
 }
 function validateMonth(el){
   const v=el.value.replace(/[^0-9]/g,'');
