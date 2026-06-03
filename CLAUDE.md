@@ -1,7 +1,7 @@
 # 2026database — 我的班級工具總專案
 
 ## 對話開始時請先讀
-進度與最近更動都在 Obsidian：`Obsidian_第二大腦/2026database/工作筆記.md`
+進度與最近更動都在 Obsidian：`Obsidian_第二大腦/claude專案/工作筆記.md`
 
 ## 工作模式
 - **加新工具**：對 Claude 說「我想做一個 XXX 工具」→ Claude 會建 `tools/<工具名>/` 子資料夾、引導我跟著 EP10 影片做
@@ -10,8 +10,8 @@
 
 ## 工作桌 + 三個家
 - 📋 GDrive 工作桌：`D:\我的雲端硬碟\claude專案\`（自動跨電腦同步）
-- 🐙 GitHub repo：`Nicole-Hsu/2026database`（公開，網頁的家）
-- 📘 Obsidian 駕駛艙：`Obsidian_第二大腦/2026database/工作筆記.md`（想法的家）
+- 🐙 GitHub repo：`Nicole-Hsu/claude專案`（公開，網頁的家）
+- 📘 Obsidian 駕駛艙：`Obsidian_第二大腦/claude專案/工作筆記.md`（想法的家）
 - 🔥 Firebase 專案：`my-teaching-tools`（資料的家）
 
 ## 工具清單
