@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>座標獵人</title>
+<style>
+  :root {
+    --bg: #111;
+    --surface: #1a1a1a;
+    --border: #333;
+    --orange: #ff8c00;
+    --orange-dim: #cc6f00;
+    --white: #f0f0f0;
+    --hit: #ff8c00;
+    --miss: #555;
+    --grid-line: #2a2a2a;
+    --font: 'Courier New', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: var(--font);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    color: var(--orange);
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px var(--orange-dim);
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+  }
+
+  .hud {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+  }
+
+  .hud-item { text-align: center; }
+  .hud-label { color: #888; font-size: 0.75rem; letter-spacing: 2px; }
+  .hud-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--orange);
+    text-shadow: 0 0 10px var(--orange-dim);
+  }
+  .hud-value.danger { color: #ff4444; text-shadow: 0 0 10px #aa0000; }
+
+  .game-area {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ── 格點棋盤 ── */
+  .board-wrap {
+    position: relative;
+  }
+
+  canvas {
+    display: block;
+    cursor: crosshair;
+    border: 1px solid var(--border);
+  }
+
+  /* ── 右側面板 ── */
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 220px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--orange);
+    color: var(--white);
+    font-family: var(--font);
+    font-size: 1.1rem;
+    padding: 8px 12px;
+    outline: none;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+  input[type="text"]::placeholder { color: #555; }
+  input[type="text"]:focus { box-shadow: 0 0 8px var(--orange-dim); }
+
+  button {
+    background: var(--orange);
+    color: #111;
+    border: none;
+    font-family: var(--font);
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    transition: background 0.15s;
+  }
+  button:hover { background: #ffaa33; }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--orange);
+    color: var(--orange);
+  }
+  button.secondary:hover { background: #222; }
+
+  .msg {
+    font-size: 1rem;
+    min-height: 1.4em;
+    color: var(--orange);
+    letter-spacing: 1px;
+  }
+  .msg.error { color: #ff4444; }
+  .msg.miss  { color: #888; }
+
+  .log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 10px;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    max-height: 180px;
+    overflow-y: auto;
+    color: #aaa;
+  }
+  .log .hit-entry  { color: var(--orange); }
+  .log .miss-entry { color: #555; }
+
+  /* ── 結束畫面 ── */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+  }
+  .overlay.show { display: flex; }
+
+  .result-box {
+    background: var(--surface);
+    border: 2px solid var(--orange);
+    padding: 40px 60px;
+    text-align: center;
+    box-shadow: 0 0 40px var(--orange-dim);
+  }
+  .result-box h2 { color: var(--orange); font-size: 1.5rem; margin-bottom: 16px; letter-spacing: 3px; }
+  .result-box .score-big { font-size: 4rem; color: var(--orange); text-shadow: 0 0 20px var(--orange); }
+  .result-box p { color: #aaa; margin: 8px 0 24px; font-size: 0.9rem; }
+
+  /* scrollbar */
+  .log::-webkit-scrollbar { width: 4px; }
+  .log::-webkit-scrollbar-track { background: #111; }
+  .log::-webkit-scrollbar-thumb { background: var(--orange-dim); }
+</style>
+</head>
+<body>
+
+<h1>◎ 座標獵人</h1>
+<p class="subtitle">COORDINATE HUNTER — 找出所有隱藏座標！</p>
+
+<div class="hud">
+  <div class="hud-item">
+    <div class="hud-label">得分</div>
+    <div class="hud-value" id="scoreDisplay">0</div>
+  </div>
+  <div class="hud-item">
+    <div class="hud-label">剩餘目標</div>
+    <div class="hud-value" id="remainDisplay">10</div>
+  </div>
+  <div class="hud-item">
+    <div class="hud-label">倒數</div>
+    <div class="hud-value" id="timerDisplay">60</div>
+  </div>
+</div>
+
+<div class="game-area">
+  <div class="board-wrap">
+    <canvas id="board" width="440" height="440"></canvas>
+  </div>
+
+  <div class="panel">
+    <div>
+      <div style="color:#888;font-size:0.75rem;letter-spacing:2px;margin-bottom:6px;">輸入座標（例：2,-3）</div>
+      <div class="input-row">
+        <input type="text" id="coordInput" placeholder="x,y" maxlength="7" autocomplete="off">
+        <button onclick="submitGuess()">射擊</button>
+      </div>
+    </div>
+    <div class="msg" id="msg">準備開始！</div>
+    <div class="log" id="log"><span style="color:#444">— 猜測記錄 —</span></div>
+    <button class="secondary" onclick="resetGame()">⟳ 重新開始</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="result-box">
+    <h2>遊戲結束</h2>
+    <div class="score-big" id="finalScore">0</div>
+    <p>/ 10 分</p>
+    <button onclick="resetGame()">再玩一次</button>
+  </div>
+</div>
+
+<script>
+// ── 常數 ──
+const RANGE   = 5;          // -5 ~ 5
+const SIZE    = 11;         // 11×11
+const TOTAL   = 10;         // 隱藏目標數
+const SECONDS = 60;
+const CELL    = 40;         // px per cell
+const PAD     = 20;         // canvas padding
+
+// ── 狀態 ──
+let targets   = [];
+let hits      = new Set();
+let guesses   = [];
+let score     = 0;
+let timeLeft  = SECONDS;
+let timer     = null;
+let started   = false;
+
+// ── Canvas ──
+const canvas  = document.getElementById('board');
+const ctx     = canvas.getContext('2d');
+
+// 座標轉換：邏輯 → canvas px
+function toCanvas(x, y) {
+  return {
+    cx: PAD + (x + RANGE) * CELL,
+    cy: PAD + (RANGE - y) * CELL
+  };
+}
+
+function drawBoard() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // 背景
+  ctx.fillStyle = '#111';
+  ctx.fillRect(0, 0, W, H);
+
+  // 格線
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= SIZE - 1; i++) {
+    const x = PAD + i * CELL, y = PAD + i * CELL;
+    ctx.beginPath(); ctx.moveTo(x, PAD); ctx.lineTo(x, PAD + (SIZE-1)*CELL); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(PAD + (SIZE-1)*CELL, y); ctx.stroke();
+  }
+
+  // 軸線（粗一點）
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1.5;
+  const {cx: ox} = toCanvas(0, RANGE);   // x=0 垂直線
+  const {cy: oy} = toCanvas(RANGE, 0);   // y=0 水平線
+  ctx.beginPath(); ctx.moveTo(PAD + RANGE*CELL, PAD); ctx.lineTo(PAD + RANGE*CELL, PAD+(SIZE-1)*CELL); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PAD, PAD + RANGE*CELL); ctx.lineTo(PAD+(SIZE-1)*CELL, PAD+RANGE*CELL); ctx.stroke();
+
+  // 刻度標籤
+  ctx.fillStyle = '#666';
+  ctx.font = '11px Courier New';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let v = -RANGE; v <= RANGE; v++) {
+    if (v === 0) continue;
+    const {cx} = toCanvas(v, 0);
+    ctx.fillText(v, cx, PAD + RANGE*CELL + 4);
+  }
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let v = -RANGE; v <= RANGE; v++) {
+    if (v === 0) continue;
+    const {cy} = toCanvas(0, v);
+    ctx.fillText(v, PAD + RANGE*CELL - 4, cy);
+  }
+  // 原點標
+  ctx.fillStyle = '#555';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('O', PAD + RANGE*CELL - 10, PAD + RANGE*CELL + 4);
+
+  // 格點（小點）
+  ctx.fillStyle = '#2a2a2a';
+  for (let gx = -RANGE; gx <= RANGE; gx++) {
+    for (let gy = -RANGE; gy <= RANGE; gy++) {
+      const {cx, cy} = toCanvas(gx, gy);
+      ctx.beginPath();
+      ctx.arc(cx, cy, 2, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  // 猜過的點
+  for (const g of guesses) {
+    const key = `${g.x},${g.y}`;
+    const isHit = hits.has(key);
+    const {cx, cy} = toCanvas(g.x, g.y);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 8, 0, Math.PI*2);
+    ctx.fillStyle = isHit ? '#ff8c00' : '#333';
+    ctx.fill();
+    ctx.strokeStyle = isHit ? '#ffaa33' : '#555';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    if (isHit) {
+      // 打叉標記
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cx-4, cy-4); ctx.lineTo(cx+4, cy+4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+4, cy-4); ctx.lineTo(cx-4, cy+4); ctx.stroke();
+    }
+  }
+
+  // 結束後顯示所有目標位置
+  if (!started && targets.length > 0 && (score < TOTAL)) {
+    for (const [tx, ty] of targets) {
+      const key = `${tx},${ty}`;
+      if (!hits.has(key)) {
+        const {cx, cy} = toCanvas(tx, ty);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(255,68,68,0.5)';
+        ctx.fill();
+        ctx.strokeStyle = '#ff4444';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function genTargets() {
+  const set = new Set();
+  while (set.size < TOTAL) {
+    const x = Math.floor(Math.random() * SIZE) - RANGE;
+    const y = Math.floor(Math.random() * SIZE) - RANGE;
+    set.add(`${x},${y}`);
+  }
+  return [...set].map(k => k.split(',').map(Number));
+}
+
+function startTimer() {
+  if (timer) clearInterval(timer);
+  timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById('timerDisplay').textContent = timeLeft;
+    if (timeLeft <= 10) {
+      document.getElementById('timerDisplay').classList.add('danger');
+    }
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+}
+
+function updateHUD() {
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('remainDisplay').textContent = TOTAL - score;
+}
+
+function setMsg(text, type = '') {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = 'msg' + (type ? ' ' + type : '');
+}
+
+function addLog(text, type) {
+  const log = document.getElementById('log');
+  const span = document.createElement('span');
+  span.className = type + '-entry';
+  span.textContent = text;
+  log.appendChild(span);
+  log.appendChild(document.createElement('br'));
+  log.scrollTop = log.scrollHeight;
+}
+
+function submitGuess() {
+  const raw = document.getElementById('coordInput').value.trim();
+  document.getElementById('coordInput').value = '';
+  document.getElementById('coordInput').focus();
+
+  if (!started) {
+    setMsg('遊戲尚未開始，請按重新開始！', 'error');
+    return;
+  }
+
+  // 解析輸入
+  const m = raw.match(/^(-?\d+)\s*,\s*(-?\d+)$/);
+  if (!m) { setMsg('格式錯誤！請輸入如：2,-3', 'error'); return; }
+
+  const gx = parseInt(m[1]), gy = parseInt(m[2]);
+  if (gx < -RANGE || gx > RANGE || gy < -RANGE || gy > RANGE) {
+    setMsg(`超出範圍！座標需在 -${RANGE} 到 ${RANGE} 之間`, 'error'); return;
+  }
+
+  const key = `${gx},${gy}`;
+  if (guesses.some(g => g.x === gx && g.y === gy)) {
+    setMsg('這個座標已經猜過了！', 'miss'); return;
+  }
+
+  guesses.push({x: gx, y: gy});
+
+  if (targets.some(([tx, ty]) => tx === gx && ty === gy)) {
+    hits.add(key);
+    score++;
+    updateHUD();
+    setMsg(`🎯 命中 (${gx}, ${gy})！`);
+    addLog(`✦ 命中 (${gx}, ${gy})`, 'hit');
+    if (score >= TOTAL) endGame();
+  } else {
+    setMsg(`沒中 (${gx}, ${gy})，再試試！`, 'miss');
+    addLog(`  ✗ (${gx}, ${gy})`, 'miss');
+  }
+
+  drawBoard();
+}
+
+function endGame() {
+  if (timer) clearInterval(timer);
+  timer = null;
+  started = false;
+  drawBoard(); // 顯示剩餘目標
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function resetGame() {
+  if (timer) clearInterval(timer);
+  timer = null;
+  targets  = genTargets();
+  hits     = new Set();
+  guesses  = [];
+  score    = 0;
+  timeLeft = SECONDS;
+  started  = true;
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('timerDisplay').textContent = SECONDS;
+  document.getElementById('timerDisplay').classList.remove('danger');
+  document.getElementById('log').innerHTML = '<span style="color:#444">— 猜測記錄 —</span>';
+  updateHUD();
+  setMsg('開始！找出 10 個隱藏座標！');
+  document.getElementById('coordInput').value = '';
+  document.getElementById('coordInput').focus();
+  drawBoard();
+  startTimer();
+}
+
+// Enter 鍵送出
+document.getElementById('coordInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitGuess();
+});
+
+// 初始畫面
+drawBoard();
+setMsg('按「重新開始」開始遊戲！');
+</script>
+</body>
+</html>
