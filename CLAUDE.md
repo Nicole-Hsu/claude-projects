@@ -10,7 +10,7 @@
 
 ## 工作桌 + 三個家
 - 📋 GDrive 工作桌：`D:\我的雲端硬碟\claude專案\`（自動跨電腦同步）
-- 🐙 GitHub repo：`Nicole-Hsu/claude專案`（公開，網頁的家）
+- 🐙 GitHub repo：`Nicole-Hsu/claude-projects`（公開，網頁的家）
 - 📘 Obsidian 駕駛艙：`Obsidian_第二大腦/claude專案/工作筆記.md`（想法的家）
 - 🔥 Firebase 專案：`my-teaching-tools`（資料的家）
 
