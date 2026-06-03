@@ -9,7 +9,7 @@
 - **接續工作**：對 Claude 說「讀工作筆記、告訴我上次做到哪」
 
 ## 工作桌 + 三個家
-- 📋 GDrive 工作桌：`D:\我的雲端硬碟\claude專案\2026database\`（自動跨電腦同步）
+- 📋 GDrive 工作桌：`D:\我的雲端硬碟\claude專案\`（自動跨電腦同步）
 - 🐙 GitHub repo：`Nicole-Hsu/2026database`（公開，網頁的家）
 - 📘 Obsidian 駕駛艙：`Obsidian_第二大腦/2026database/工作筆記.md`（想法的家）
 - 🔥 Firebase 專案：`my-teaching-tools`（資料的家）
