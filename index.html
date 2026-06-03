@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nicole 老師的教學工具箱</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --border: #334155;
+    --accent: #f59e0b;
+    --accent-dim: #b45309;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif;
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+  .container { max-width: 860px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 56px; }
+  header h1 {
+    font-size: 2rem;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  header p { color: var(--muted); font-size: 0.95rem; }
+
+  .section-title {
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-left: 4px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    text-decoration: none;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .card-icon { font-size: 2rem; }
+  .card-title { font-size: 1.05rem; font-weight: 700; }
+  .card-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+  .card-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-top: auto;
+    align-self: flex-start;
+  }
+  .tag-math    { background: rgba(245,158,11,0.15); color: var(--accent); }
+  .tag-admin   { background: rgba(59,130,246,0.15); color: var(--blue); }
+  .tag-kpi     { background: rgba(168,85,247,0.15); color: var(--purple); }
+  .tag-demo    { background: rgba(100,116,139,0.15); color: var(--muted); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 24px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🧰 Nicole 老師的教學工具箱</h1>
+    <p>教學互動工具集 — 純前端，掃碼即用</p>
+  </header>
+
+  <div class="section-title">數學練習</div>
+  <div class="grid">
+    <a class="card" href="tools/coordinate-hunter/index.html">
+      <div class="card-icon">🎯</div>
+      <div class="card-title">座標獵人</div>
+      <div class="card-desc">11×11 格點直角座標練習，60 秒倒數、隨機 10 個隱藏目標，命中計分。</div>
+      <span class="card-tag tag-math">數學</span>
+    </a>
+  </div>
+
+  <div class="section-title">行政工具</div>
+  <div class="grid">
+    <a class="card" href="sign-in-system/index.html">
+      <div class="card-icon">✍️</div>
+      <div class="card-title">線上簽到系統</div>
+      <div class="card-desc">手寫簽名報到，資料存 Firebase + Google Sheets，管理後台即時查看。</div>
+      <span class="card-tag tag-admin">行政</span>
+    </a>
+    <a class="card" href="sign-in-system/qrcode.html">
+      <div class="card-icon">📱</div>
+      <div class="card-title">QR Code 產生器</div>
+      <div class="card-desc">為簽到系統產生 QR Code，列印後貼在報到桌供學員掃碼。</div>
+      <span class="card-tag tag-admin">行政</span>
+    </a>
+    <a class="card" href="KPI/index.html">
+      <div class="card-icon">📊</div>
+      <div class="card-title">KPI 填報系統</div>
+      <div class="card-desc">健康暨高齡照顧研發中心 KPI 線上填報，自動送 Google Sheets。</div>
+      <span class="card-tag tag-kpi">KPI</span>
+    </a>
+    <a class="card" href="KPI/demo.html">
+      <div class="card-icon">🖥️</div>
+      <div class="card-title">KPI Demo 版</div>
+      <div class="card-desc">KPI 系統展示用版本，可用於示範說明，不連接正式後端。</div>
+      <span class="card-tag tag-demo">展示</span>
+    </a>
+  </div>
+
+  <footer>
+    <a href="https://github.com/Nicole-Hsu/claude-projects" target="_blank">GitHub</a>
+    &nbsp;·&nbsp; Nicole Hsu &nbsp;·&nbsp; 2026
+  </footer>
+</div>
+</body>
+</html>
