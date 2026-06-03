@@ -570,9 +570,7 @@ function buildPlannedBand(d, inner=false) {
       <span style="font-size:.73rem;font-weight:700;color:var(--purple);flex-shrink:0;margin-top:3px;min-width:18px">${i+1}.</span>
       <div style="flex:1;line-height:1.55;white-space:pre-wrap">${esc(p.Content)}</div>
       <span style="font-size:.72rem;color:var(--muted);white-space:nowrap;padding-top:2px">${p.PlannedDate||''} ${p.Year?p.Year+'年':''}</span>
-      <button class="btn btn-o btn-sm" onclick='event.stopPropagation();editPlanned(${JSON.stringify(p)})'>✎</button>
       <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a" onclick="event.stopPropagation();togglePlannedArchive('${p.ID}','${d.ID}')" title="封存">🗃</button>
-      <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delPlanned('${p.ID}','${d.ID}')">✕</button>
     </div>`).join('');
   const hidRows = hidP.map(p=>`
     <div style="display:flex;align-items:center;gap:6px;padding:3px 6px;background:rgba(0,0,0,.04);border-radius:5px;margin-bottom:3px;opacity:.45">
@@ -590,7 +588,6 @@ function buildPlannedBand(d, inner=false) {
       <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
         <textarea id="aPc2_${d.ID}" style="flex:1;min-width:140px;padding:5px 8px;border:1px solid var(--purple-b);border-radius:5px;font-size:.79rem;font-family:inherit;resize:vertical;min-height:80px;background:#fff" placeholder="新增預計工作內容…"></textarea>
         <div style="display:flex;flex-direction:column;gap:4px">
-          <input id="aPd2_${d.ID}" style="width:88px;padding:5px 8px;border:1px solid var(--purple-b);border-radius:5px;font-size:.79rem;font-family:inherit;background:#fff" placeholder="預定時間">
           <input id="aPy2_${d.ID}" style="width:88px;padding:5px 8px;border:1px solid var(--purple-b);border-radius:5px;font-size:.79rem;font-family:inherit;background:#fff" placeholder="年度">
           <button class="btn btn-sm" style="background:var(--purple);color:#fff;border:none" onclick="event.stopPropagation();addPlanned2('${d.ID}')">新增</button>
         </div>
@@ -688,9 +685,7 @@ function buildKPIBand(d, inner=false) {
         <div class="kact">
           ${idx>0?`<button class="btn btn-o btn-sm" onclick="event.stopPropagation();moveKPIOrder('${k.ID}','${d.ID}','up')" title="上移">↑</button>`:''}
           ${idx<visibleKpis.length-1?`<button class="btn btn-o btn-sm" onclick="event.stopPropagation();moveKPIOrder('${k.ID}','${d.ID}','down')" title="下移">↓</button>`:''}
-          <button class="btn btn-o btn-sm" onclick='event.stopPropagation();showEditKPI(${JSON.stringify(k)})'>✎</button>
           <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a" onclick="event.stopPropagation();toggleKPIArchive('${k.ID}','${esc(k.KPIText)}','${d.ID}')" title="封存KPI">🗃</button>
-          <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delKPI('${k.ID}','${d.ID}')">✕</button>
         </div>
       </div>
       ${progressBar}
@@ -708,7 +703,7 @@ function buildKPIBand(d, inner=false) {
           </div>
           <div>
             <div style="font-size:.67rem;color:var(--muted);margin-bottom:2px">月</div>
-            <input id="achMo_${k.ID}" placeholder="1-12" style="width:48px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:.78rem;font-family:inherit;background:#fff" oninput="validateMonth(this)" type="number" min="1" max="12">
+            <input id="achMo_${k.ID}" placeholder="1-12" style="width:70px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:.78rem;font-family:inherit;background:#fff" oninput="validateMonth(this)" type="number" min="1" max="12">
           </div>
           <input type="hidden" id="achN_${k.ID}" value="">
           <button class="btn btn-p btn-sm" style="height:29px" onclick="event.stopPropagation();addKPIAch('${k.ID}','${d.ID}','${esc(kYearStr)}',${isYBool})">記錄</button>
@@ -788,7 +783,7 @@ function buildExecBand(d) {
     <div class="bico">✅</div>
     <div class="bcnt">
       <div class="btitle">執行狀況<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▲</button></div>
-      <div style="height:280px;min-height:80px;max-height:800px;overflow-y:auto;padding-right:2px;resize:vertical;">
+      <div style="height:150px;min-height:60px;max-height:800px;overflow-y:auto;padding-right:2px;resize:vertical;">
         ${hasContent ? '' : '<span style="color:#94a3b8;font-size:.8rem">尚無執行紀錄</span>'}
         ${p2}${p1}
       </div>
@@ -802,14 +797,8 @@ function buildExecAdd(d) {
     <div class="eadd-title">＋ 新增本月執行狀況</div>
     <div class="erow">
       <input placeholder="民國年" id="p2y_${d.ID}" style="width:68px">
-      <input placeholder="月(1-12)" id="p2m_${d.ID}" style="width:64px" oninput="validateMonth(this)" type="number" min="1" max="12">
-      <select id="p2c_${d.ID}">
-        <option value="#1e293b">黑字</option>
-        <option value="#1d4ed8">藍字</option>
-        <option value="#dc2626" selected>紅字</option>
-        <option value="#15803d">綠字</option>
-        <option value="#d97706">橘字</option>
-      </select>
+      <input placeholder="月(1-12)" id="p2m_${d.ID}" style="width:80px" oninput="validateMonth(this)" type="number" min="1" max="12">
+      <span style="font-size:.75rem;color:#dc2626;font-weight:600">🔴 紅字</span>
     </div>
     <textarea class="eta" id="p2t_${d.ID}" placeholder="填寫本月實際執行狀況…"></textarea>
     <button class="btn btn-p btn-sm" onclick="event.stopPropagation();addPool2('${d.ID}')">新增</button>
@@ -820,7 +809,6 @@ function buildFooter(d) {
   const isArch=isArchived(d.ID);
   return `
   <div class="wftr">
-    <button class="fbtn fbtn-d" onclick="event.stopPropagation();confirmDeleteWI('${d.ID}','${esc(d.Title)}')">🗑 刪除</button>
     <button class="fbtn" onclick="event.stopPropagation();toggleArchive('${d.ID}','${esc(d.Title)}')" style="${isArch?'color:var(--amber)':''}">${isArch?'📤 取消封存':'🗃 封存'}</button>
     <button class="fbtn" onclick="event.stopPropagation();showExportModal('${d.ID}')">⬇ 匯出</button>
     <button class="fbtn fbtn-p" onclick="event.stopPropagation();showEditWI('${d.ID}','${esc(d.Title)}','${d.Period||''}')">✏ 修改</button>
@@ -832,13 +820,11 @@ function buildPlanned(d) {
   const tChips = (d.teachers||[]).map(t=>`
     <span class="ptag" style="background:#e0e7ff;color:#3730a3">
       <span class="pav" style="background:#c7d2fe;color:#4338ca">${t.TeacherName.charAt(0)}</span>${t.TeacherName}
-      <button style="background:none;border:none;cursor:pointer;font-size:.7rem;color:#6366f1" onclick="event.stopPropagation();delTeacher('${t.ID}','${d.ID}')">✕</button>
     </span>`).join('');
   // CoOrgs
   const cChips = (d.coOrgs||[]).map(c=>`
     <span class="ptag" style="background:#d1fae5;color:#065f46">
       ${c.PersonName}
-      <button style="background:none;border:none;cursor:pointer;font-size:.7rem;color:#059669" onclick="event.stopPropagation();delCoOrg('${c.ID}','${d.ID}')">✕</button>
     </span>`).join('');
   // Units
   const uChips = (d.units||[]).map(u=>`
@@ -1104,17 +1090,23 @@ function editPlanned(p) {
     .savePlanned({...p,Content:nc,PlannedDate:nd,Year:ny});
 }
 function addPlanned(wiId){const c=document.getElementById('aPc_'+wiId).value.trim();const d=document.getElementById('aPd_'+wiId).value.trim();const y=document.getElementById('aPy_'+wiId).value.trim();if(!c){toast('請填寫工作內容','err');return;}google.script.run.withSuccessHandler(()=>{toast('已新增');inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).savePlanned({WorkItemID:wiId,Content:c,PlannedDate:d,Year:y});}
-function addPlanned2(wiId){const c=document.getElementById('aPc2_'+wiId).value.trim();const d=document.getElementById('aPd2_'+wiId).value.trim();const y=document.getElementById('aPy2_'+wiId).value.trim();if(!c){toast('請填寫工作內容','err');return;}google.script.run.withSuccessHandler(()=>{toast('已新增');document.getElementById('aPc2_'+wiId).value='';inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).savePlanned({WorkItemID:wiId,Content:c,PlannedDate:d,Year:y});}
+function addPlanned2(wiId){const c=document.getElementById('aPc2_'+wiId).value.trim();const y=document.getElementById('aPy2_'+wiId).value.trim();if(!c){toast('請填寫工作內容','err');return;}google.script.run.withSuccessHandler(()=>{toast('已新增');document.getElementById('aPc2_'+wiId).value='';inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).savePlanned({WorkItemID:wiId,Content:c,PlannedDate:'',Year:y});}
 function delPlanned(id,wiId){if(!confirm('確定刪除？'))return;google.script.run.withSuccessHandler(()=>{toast('已刪除');inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).deletePlanned(id);}
 
 // ════ Pool CRUD ════
+const _p2Lock={};
 function addPool2(wiId) {
+  if(_p2Lock[wiId]){return;} // 防止重複送出
   const content=document.getElementById('p2t_'+wiId).value.trim();
   const year=document.getElementById('p2y_'+wiId).value.trim();
   const month=document.getElementById('p2m_'+wiId).value.trim();
-  const color=document.getElementById('p2c_'+wiId).value;
+  const color='#dc2626'; // 固定紅字
   if(!content){toast('請填寫執行狀況內容','err');return;}
-  google.script.run.withSuccessHandler(()=>{toast('已新增');document.getElementById('p2t_'+wiId).value='';inv(wiId,true);}).withFailureHandler(e=>toast('失敗','err')).saveToPool2({WorkItemID:wiId,Year:year,Month:month,Content:content,TextColor:color});
+  _p2Lock[wiId]=true;
+  google.script.run
+    .withSuccessHandler(()=>{_p2Lock[wiId]=false;toast('已新增');document.getElementById('p2t_'+wiId).value='';inv(wiId,true);})
+    .withFailureHandler(e=>{_p2Lock[wiId]=false;toast('失敗','err');})
+    .saveToPool2({WorkItemID:wiId,Year:year,Month:month,Content:content,TextColor:color});
 }
 function editPool2Entry(p) {
   const nc=prompt('修改執行狀況',p.Content);if(nc===null)return;
