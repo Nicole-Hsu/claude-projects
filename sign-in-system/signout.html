@@ -176,6 +176,38 @@ body {
   <button onclick="location.href='index.html'" style="margin-top:28px;padding:12px 32px;border:2px solid rgba(255,255,255,.7);background:transparent;color:#fff;border-radius:10px;font-size:1rem;font-family:inherit;cursor:pointer;">返回簽到頁</button>
 </div>
 
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCmhvbgPnnNOCTJ6xPXuFCO37o0LIFwrtA",
+  authDomain: "signinsystem2026.firebaseapp.com",
+  projectId: "signinsystem2026",
+  storageBucket: "signinsystem2026.firebasestorage.app",
+  messagingSenderId: "331926593930",
+  appId: "1:331926593930:web:a1788e67d8c52334432873"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// 檢查簽退是否開放
+(async () => {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'status'));
+    const open = snap.exists() ? snap.data().signOutOpen : false;
+    if (!open) {
+      document.getElementById('mainCard').innerHTML = `
+        <div style="text-align:center;padding:30px 10px">
+          <div style="font-size:3rem;margin-bottom:14px">🔒</div>
+          <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:8px">目前未開放簽退</h3>
+          <p style="font-size:.9rem;color:#6b5c54">請等候工作人員通知開放後再進行簽退</p>
+        </div>`;
+    }
+  } catch(e) { /* 讀取失敗則預設開放 */ }
+})();
+</script>
+
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRhAY3Py9gLV5yUF_TpRxo7jTs-yPnfHUnnM4CSmmrcmDNMw4GfxEeR2E7t_8PjacU/exec';
 const EVENT_NAME = '照顧服務員術科培訓研討會';

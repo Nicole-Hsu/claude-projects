@@ -190,6 +190,13 @@ body {
 /* ── ADMIN LINK ── */
 .admin-link { text-align: center; padding-bottom: 10px; }
 .admin-link a { font-size: .75rem; color: var(--text-dim); text-decoration: none; }
+
+/* ── CLOSED NOTICE ── */
+#closedNotice { display: none; margin: 30px 14px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 40px 20px; text-align: center; }
+#closedNotice.show { display: block; }
+#closedNotice .icon { font-size: 3rem; margin-bottom: 14px; }
+#closedNotice h3 { font-size: 1.2rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+#closedNotice p { font-size: .9rem; color: var(--text-mid); }
 </style>
 </head>
 <body>
@@ -256,6 +263,12 @@ body {
 
 <button id="submitBtn" onclick="submitForm()">確認送出簽到 ✓</button>
 
+<div id="closedNotice">
+  <div class="icon">🔒</div>
+  <h3>目前未開放簽到</h3>
+  <p>請等候工作人員通知開放後再進行簽到</p>
+</div>
+
 <div class="admin-link">
   <a href="admin.html">管理人員入口</a>
 </div>
@@ -277,7 +290,7 @@ body {
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js';
-import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
+import { getFirestore, collection, addDoc, doc, getDoc } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
 
 // ── Firebase 設定 ──
 const firebaseConfig = {
@@ -305,6 +318,20 @@ window._CONFIG = CONFIG;
 // ── 初始化 ──
 document.getElementById('eventTitle').textContent = CONFIG.eventName;
 document.getElementById('eventDate').textContent = CONFIG.eventDate;
+
+// ── 檢查簽到是否開放 ──
+(async () => {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'status'));
+    const open = snap.exists() ? snap.data().signInOpen : false;
+    if (!open) {
+      document.getElementById('formCard').style.display = 'none';
+      document.getElementById('sigCard').style.display = 'none';
+      document.getElementById('submitBtn').style.display = 'none';
+      document.getElementById('closedNotice').classList.add('show');
+    }
+  } catch(e) { /* 讀取失敗則預設開放 */ }
+})();
 
 // ── 簽名畫布 ──
 const canvas = document.getElementById('sigCanvas');

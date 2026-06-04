@@ -46,6 +46,18 @@ tr:hover td{background:#f6faf8;}
 .note{font-size:.75rem;color:var(--text-dim);padding:8px 20px 16px;}
 #loadingBanner{text-align:center;padding:12px;color:var(--accent);font-size:.9rem;display:none;}
 @media print{body{background:#fff;}.no-print{display:none!important;}#tableWrap{box-shadow:none;margin:0;border-radius:0;}}
+
+/* ── 開放控制 ── */
+#statusControl{display:flex;gap:12px;padding:0 20px 14px;flex-wrap:wrap;}
+.ctrl-card{flex:1;min-width:160px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+.ctrl-info{display:flex;flex-direction:column;gap:4px;}
+.ctrl-label{font-size:.78rem;color:var(--text-mid);font-weight:600;letter-spacing:.05em;}
+.ctrl-badge{font-size:.9rem;font-weight:700;}
+.ctrl-badge.open{color:#4a9e78;}
+.ctrl-badge.closed{color:#d96060;}
+.ctrl-toggle{padding:8px 18px;border-radius:8px;border:none;font-size:.85rem;font-family:inherit;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.ctrl-toggle.open{background:#fde8e8;color:#d96060;}
+.ctrl-toggle.closed{background:#d4ede2;color:#2d6a50;}
 </style>
 </head>
 <body>
@@ -63,6 +75,23 @@ tr:hover td{background:#f6faf8;}
 </div>
 
 <div id="loadingBanner">⏳ 讀取中，請稍候…</div>
+
+<div id="statusControl" class="no-print">
+  <div class="ctrl-card">
+    <div class="ctrl-info">
+      <div class="ctrl-label">簽到開放狀態</div>
+      <div class="ctrl-badge" id="signInBadge">讀取中…</div>
+    </div>
+    <button class="ctrl-toggle" id="signInBtn" onclick="toggleStatus('signIn')" disabled>…</button>
+  </div>
+  <div class="ctrl-card">
+    <div class="ctrl-info">
+      <div class="ctrl-label">簽退開放狀態</div>
+      <div class="ctrl-badge" id="signOutBadge">讀取中…</div>
+    </div>
+    <button class="ctrl-toggle" id="signOutBtn" onclick="toggleStatus('signOut')" disabled>…</button>
+  </div>
+</div>
 
 <div id="stats">
   <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">總簽到人數</div></div>
@@ -101,7 +130,7 @@ tr:hover td{background:#f6faf8;}
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js';
-import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCmhvbgPnnNOCTJ6xPXuFCO37o0LIFwrtA",
@@ -241,7 +270,37 @@ window.exportCSV = function() {
 
 // 啟動
 loadAll();
-setInterval(loadAll, 60000); // 每分鐘自動重新整理
+setInterval(loadAll, 60000);
+
+// ── 開放狀態控制 ──
+const statusDoc = doc(db, 'config', 'status');
+
+function updateCtrlUI(signInOpen, signOutOpen) {
+  const si = { badge: document.getElementById('signInBadge'), btn: document.getElementById('signInBtn') };
+  const so = { badge: document.getElementById('signOutBadge'), btn: document.getElementById('signOutBtn') };
+  si.badge.textContent = signInOpen ? '● 開放中' : '● 已關閉';
+  si.badge.className = 'ctrl-badge ' + (signInOpen ? 'open' : 'closed');
+  si.btn.textContent = signInOpen ? '關閉簽到' : '開放簽到';
+  si.btn.className = 'ctrl-toggle ' + (signInOpen ? 'open' : 'closed');
+  si.btn.disabled = false;
+  so.badge.textContent = signOutOpen ? '● 開放中' : '● 已關閉';
+  so.badge.className = 'ctrl-badge ' + (signOutOpen ? 'open' : 'closed');
+  so.btn.textContent = signOutOpen ? '關閉簽退' : '開放簽退';
+  so.btn.className = 'ctrl-toggle ' + (signOutOpen ? 'open' : 'closed');
+  so.btn.disabled = false;
+}
+
+onSnapshot(statusDoc, snap => {
+  const data = snap.exists() ? snap.data() : { signInOpen: false, signOutOpen: false };
+  updateCtrlUI(data.signInOpen, data.signOutOpen);
+});
+
+window.toggleStatus = async function(type) {
+  const snap = await getDoc(statusDoc);
+  const data = snap.exists() ? snap.data() : { signInOpen: false, signOutOpen: false };
+  const newVal = !data[type + 'Open'];
+  await setDoc(statusDoc, { ...data, [type + 'Open']: newVal }, { merge: true });
+};
 </script>
 </body>
 </html>
