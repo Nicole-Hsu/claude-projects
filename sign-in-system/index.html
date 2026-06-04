@@ -178,8 +178,12 @@ body {
 #successScreen.show { display: flex; }
 .success-icon { font-size: 5rem; margin-bottom: 20px; animation: pop .5s cubic-bezier(.2,1.4,.5,1); }
 #successScreen h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 10px; }
-#successScreen .sub { font-size: 1rem; opacity: .85; margin-bottom: 30px; }
-#successScreen .name-display { font-size: 1.4rem; font-weight: 700; background: rgba(255,255,255,.2); border-radius: 12px; padding: 12px 24px; margin-bottom: 24px; }
+#successScreen .sub { font-size: 1rem; opacity: .85; margin-bottom: 16px; }
+#successScreen .name-display { font-size: 1.4rem; font-weight: 700; background: rgba(255,255,255,.2); border-radius: 12px; padding: 12px 24px; margin-bottom: 16px; }
+.signout-code-box { background: rgba(255,255,255,.15); border: 2px solid rgba(255,255,255,.5); border-radius: 14px; padding: 14px 24px; margin-bottom: 10px; }
+.signout-code-label { font-size: .8rem; opacity: .8; margin-bottom: 6px; letter-spacing: .08em; }
+.signout-code { font-size: 2.4rem; font-weight: 900; letter-spacing: .25em; }
+.signout-email-hint { font-size: .82rem; opacity: .7; margin-bottom: 20px; }
 .countdown { font-size: .9rem; opacity: .7; }
 @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
@@ -223,6 +227,12 @@ body {
   </div>
 
   <div class="field">
+    <label>Email <span class="req">*</span></label>
+    <input type="email" id="fEmail" placeholder="用於接收簽退連結" autocomplete="email">
+    <div class="err-msg" id="errEmail">請填寫有效的 Email</div>
+  </div>
+
+  <div class="field">
     <label>身分證後4碼</label>
     <input type="text" id="fIdLast4" placeholder="例：1234" maxlength="4" inputmode="text">
     <div class="hint">僅供身份核對，不對外揭露</div>
@@ -256,6 +266,11 @@ body {
   <h2>簽到成功！</h2>
   <div class="name-display" id="successName"></div>
   <div class="sub">感謝您的參與</div>
+  <div class="signout-code-box">
+    <div class="signout-code-label">您的簽退碼（請截圖保存）</div>
+    <div class="signout-code" id="successCode">----</div>
+  </div>
+  <div class="signout-email-hint" id="successEmailHint">簽退連結已寄至您的 Email</div>
   <div class="countdown" id="countdown"></div>
 </div>
 
@@ -359,9 +374,9 @@ function clearSig() {
 function validate() {
   let ok = true;
   const fields = [
-    { id: 'fName', err: 'errName' },
-    { id: 'fOrg',  err: 'errOrg'  },
-    { id: 'fTitle',err: 'errTitle' },
+    { id: 'fName',  err: 'errName' },
+    { id: 'fOrg',   err: 'errOrg'  },
+    { id: 'fTitle', err: 'errTitle' },
   ];
   fields.forEach(f => {
     const el = document.getElementById(f.id);
@@ -370,6 +385,13 @@ function validate() {
     document.getElementById(f.err).classList.toggle('show', !ok2);
     if (!ok2) ok = false;
   });
+  // email 驗證
+  const emailEl = document.getElementById('fEmail');
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim());
+  emailEl.classList.toggle('error', !emailOk);
+  document.getElementById('errEmail').classList.toggle('show', !emailOk);
+  if (!emailOk) ok = false;
+
   if (!signed) {
     document.getElementById('errSig').classList.add('show');
     ok = false;
@@ -377,6 +399,12 @@ function validate() {
     document.getElementById('errSig').classList.remove('show');
   }
   return ok;
+}
+
+// ── 產生簽退碼 ──
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
 // ── 送出 ──
@@ -388,15 +416,18 @@ async function submitForm() {
   btn.textContent = '送出中…';
 
   const CONFIG = window._CONFIG;
+  const signoutCode = genCode();
   const record = {
     time: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
     name: document.getElementById('fName').value.trim(),
     org:  document.getElementById('fOrg').value.trim(),
     jobTitle: document.getElementById('fTitle').value.trim(),
     phone: document.getElementById('fPhone').value.trim(),
+    email: document.getElementById('fEmail').value.trim(),
     idLast4: document.getElementById('fIdLast4').value.trim(),
     signature: canvas.toDataURL('image/png'),
     event: CONFIG.eventName,
+    signoutCode,
   };
 
   // 本機儲存
@@ -417,27 +448,31 @@ async function submitForm() {
     sigDocId = docRef.id;
   } catch(err) { console.warn('Firestore 儲存失敗', err); }
 
-  // 2. 文字欄位 + sigDocId 寫入 Google Sheets
+  // 2. 文字欄位寫入 Google Sheets，GAS 同時寄 email
   if (CONFIG.scriptUrl) {
     const params = new URLSearchParams({
-      name:     record.name,
-      org:      record.org,
-      jobTitle: record.jobTitle,
-      phone:    record.phone || '',
-      idLast4:  record.idLast4 || '',
-      time:     record.time,
-      event:    record.event,
-      sigDocId: sigDocId,
+      name:        record.name,
+      org:         record.org,
+      jobTitle:    record.jobTitle,
+      phone:       record.phone || '',
+      email:       record.email,
+      idLast4:     record.idLast4 || '',
+      time:        record.time,
+      event:       record.event,
+      sigDocId:    sigDocId,
+      signoutCode: record.signoutCode,
     });
     new Image().src = CONFIG.scriptUrl + '?' + params.toString();
   }
 
-  showSuccess(record.name);
+  showSuccess(record.name, record.email, record.signoutCode);
 }
 
 // ── 成功畫面 ──
-function showSuccess(name) {
+function showSuccess(name, email, code) {
   document.getElementById('successName').textContent = name + ' 已完成簽到';
+  document.getElementById('successCode').textContent = code;
+  document.getElementById('successEmailHint').textContent = '簽退連結已寄至 ' + email;
   document.getElementById('successScreen').classList.add('show');
   let sec = 3;
   const cd = document.getElementById('countdown');
@@ -455,7 +490,7 @@ function showSuccess(name) {
 
 function resetForm() {
   document.getElementById('successScreen').classList.remove('show');
-  ['fName','fOrg','fTitle','fPhone','fIdLast4'].forEach(id => document.getElementById(id).value = '');
+  ['fName','fOrg','fTitle','fPhone','fEmail','fIdLast4'].forEach(id => document.getElementById(id).value = '');
   clearSig();
   document.getElementById('submitBtn').disabled = false;
   document.getElementById('submitBtn').textContent = '確認送出簽到 ✓';
