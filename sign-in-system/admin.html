@@ -79,7 +79,7 @@ tr:hover td{background:#f6faf8;}
   <table>
     <thead><tr>
       <th>#</th><th>簽到時間</th><th>姓名</th><th>服務單位</th>
-      <th>職稱</th><th>聯絡電話</th><th>身分證後4碼</th><th>簽退狀態</th><th>簽名</th>
+      <th>職稱</th><th>聯絡電話</th><th>身分證後4碼</th><th>簽名</th><th>簽退狀態</th>
     </tr></thead>
     <tbody id="tableBody"></tbody>
   </table>
@@ -209,14 +209,14 @@ window.renderTable = function() {
       <td>${esc(r.jobTitle)}</td>
       <td>${esc(r.phone||'—')}</td>
       <td>${esc(r.idLast4||'—')}</td>
-      <td style="white-space:nowrap">${r.signoutTime
-        ? `<span style="color:#5a7ec4;font-weight:600">✓ 已簽退</span><br><span style="font-size:.75rem;color:#9aacbc">${esc(r.signoutTime)}</span>`
-        : '<span style="color:#d96060">未簽退</span>'
-      }</td>
       <td data-sigidx="${r._i}">${
         r.signature
           ? `<img class="sig-thumb" src="${r.signature}" onclick="window.openLightbox('${r.signature}')">`
           : r.sigDocId ? '<span class="sig-loading">載入中…</span>' : '—'
+      }</td>
+      <td style="white-space:nowrap">${r.signoutTime
+        ? `<span style="color:#5a7ec4;font-weight:600">✓ 已簽退</span><br><span style="font-size:.75rem;color:#9aacbc">${esc(r.signoutTime)}</span>`
+        : '<span style="color:#d96060">未簽退</span>'
       }</td>
     </tr>`).join('');
 };
