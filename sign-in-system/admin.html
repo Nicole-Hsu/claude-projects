@@ -66,6 +66,7 @@ tr:hover td{background:#f6faf8;}
 
 <div id="stats">
   <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">總簽到人數</div></div>
+  <div class="stat-card"><div class="stat-num" id="statSignout" style="color:#5a7ec4">0</div><div class="stat-label">已簽退</div></div>
   <div class="stat-card"><div class="stat-num" id="statOrgs">0</div><div class="stat-label">單位數</div></div>
   <div class="stat-card"><div class="stat-num" id="statLatest">—</div><div class="stat-label">最後簽到時間</div></div>
 </div>
@@ -78,7 +79,7 @@ tr:hover td{background:#f6faf8;}
   <table>
     <thead><tr>
       <th>#</th><th>簽到時間</th><th>姓名</th><th>服務單位</th>
-      <th>職稱</th><th>聯絡電話</th><th>身分證後4碼</th><th>簽名</th>
+      <th>職稱</th><th>聯絡電話</th><th>身分證後4碼</th><th>簽退狀態</th><th>簽名</th>
     </tr></thead>
     <tbody id="tableBody"></tbody>
   </table>
@@ -122,14 +123,15 @@ async function loadFromSheets() {
   const res = await fetch(SCRIPT_URL + '?action=getData');
   const json = await res.json();
   return json.map(r => ({
-    time:     r['簽到時間'] || '',
-    name:     r['姓名']     || '',
-    org:      r['服務單位'] || '',
-    jobTitle: r['職稱']     || '',
-    phone:    r['聯絡電話'] || '',
-    idLast4:  r['身分證後4碼'] || '',
-    event:    r['活動名稱'] || '',
-    sigDocId: r['簽名DocId']  || '',
+    time:        r['簽到時間']    || '',
+    name:        r['姓名']        || '',
+    org:         r['服務單位']    || '',
+    jobTitle:    r['職稱']        || '',
+    phone:       r['聯絡電話']    || '',
+    idLast4:     r['身分證後4碼'] || '',
+    event:       r['活動名稱']    || '',
+    sigDocId:    r['簽名DocId']   || '',
+    signoutTime: r['簽退時間']    || '',
     signature: null,
   }));
 }
@@ -180,6 +182,7 @@ function updateSigCell(idx, sig) {
 // ── 統計 ──
 function updateStats() {
   document.getElementById('statTotal').textContent = records.length;
+  document.getElementById('statSignout').textContent = records.filter(r=>r.signoutTime).length;
   document.getElementById('statOrgs').textContent = new Set(records.map(r=>r.org).filter(Boolean)).size;
   if (records.length) {
     const t = String(records[records.length-1].time||'');
@@ -206,6 +209,10 @@ window.renderTable = function() {
       <td>${esc(r.jobTitle)}</td>
       <td>${esc(r.phone||'—')}</td>
       <td>${esc(r.idLast4||'—')}</td>
+      <td style="white-space:nowrap">${r.signoutTime
+        ? `<span style="color:#5a7ec4;font-weight:600">✓ 已簽退</span><br><span style="font-size:.75rem;color:#9aacbc">${esc(r.signoutTime)}</span>`
+        : '<span style="color:#d96060">未簽退</span>'
+      }</td>
       <td data-sigidx="${r._i}">${
         r.signature
           ? `<img class="sig-thumb" src="${r.signature}" onclick="window.openLightbox('${r.signature}')">`
@@ -223,8 +230,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')window.closeLightbox
 // ── 匯出 CSV ──
 window.exportCSV = function() {
   if (!records.length){alert('尚無資料');return;}
-  const h=['#','簽到時間','姓名','服務單位','職稱','聯絡電話','身分證後4碼'];
-  const rows=records.map((r,i)=>[i+1,r.time,r.name,r.org,r.jobTitle,r.phone||'',r.idLast4||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const h=['#','簽到時間','姓名','服務單位','職稱','聯絡電話','身分證後4碼','簽退時間'];
+  const rows=records.map((r,i)=>[i+1,r.time,r.name,r.org,r.jobTitle,r.phone||'',r.idLast4||'',r.signoutTime||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
   const csv='﻿'+[h.join(','),...rows].join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
