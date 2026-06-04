@@ -18,19 +18,34 @@ function doGet(e) {
   return ContentService.createTextOutput('ok').setMimeType(ContentService.MimeType.TEXT);
 }
 
-// ── 取得或建立工作表 ──
+// ── 取得或建立工作表，並補齊新欄位 ──
 function getSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(SHEET_NAME);
+  const HEADERS = ['#','簽到時間','姓名','服務單位','職稱','聯絡電話','Email','身分證後4碼','活動名稱','簽名DocId','簽退碼','簽退時間'];
+
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
-    const headers = ['#','簽到時間','姓名','服務單位','職稱','聯絡電話','Email','身分證後4碼','活動名稱','簽名DocId','簽退碼','簽退時間'];
-    sheet.appendRow(headers);
+    sheet.appendRow(HEADERS);
     sheet.setFrozenRows(1);
-    const hdr = sheet.getRange(1, 1, 1, headers.length);
+    const hdr = sheet.getRange(1, 1, 1, HEADERS.length);
     hdr.setBackground('#2d6a50');
     hdr.setFontColor('#ffffff');
     hdr.setFontWeight('bold');
+  } else {
+    // 補上舊格式缺少的欄位
+    const existing = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    HEADERS.forEach((h, i) => {
+      if (existing[i] !== h) {
+        sheet.getRange(1, i + 1).setValue(h);
+      }
+    });
+    if (sheet.getLastColumn() < HEADERS.length) {
+      const hdr = sheet.getRange(1, 1, 1, HEADERS.length);
+      hdr.setBackground('#2d6a50');
+      hdr.setFontColor('#ffffff');
+      hdr.setFontWeight('bold');
+    }
   }
   return sheet;
 }

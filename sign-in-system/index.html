@@ -474,7 +474,7 @@ function showSuccess(name, email, code) {
   document.getElementById('successCode').textContent = code;
   document.getElementById('successEmailHint').textContent = '簽退連結已寄至 ' + email;
   document.getElementById('successScreen').classList.add('show');
-  let sec = 3;
+  let sec = 15;
   const cd = document.getElementById('countdown');
   cd.textContent = `${sec} 秒後自動清除，供下一位使用`;
   const t = setInterval(() => {
