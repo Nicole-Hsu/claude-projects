@@ -214,8 +214,7 @@ function updateStats() {
   document.getElementById('statSignout').textContent = records.filter(r=>r.signoutTime).length;
   document.getElementById('statOrgs').textContent = new Set(records.map(r=>r.org).filter(Boolean)).size;
   if (records.length) {
-    const t = String(records[records.length-1].time||'');
-    document.getElementById('statLatest').textContent = t.includes(' ') ? t.split(' ').slice(-2).join(' ') : t;
+    document.getElementById('statLatest').textContent = formatTime(records[records.length-1].time);
   } else { document.getElementById('statLatest').textContent = '—'; }
 }
 
@@ -232,7 +231,7 @@ window.renderTable = function() {
   tbody.innerHTML = filtered.map((r,i) => `
     <tr>
       <td><span class="idx-badge">${i+1}</span></td>
-      <td style="white-space:nowrap;font-size:.8rem;color:#6b8090">${esc(r.time)}</td>
+      <td style="white-space:nowrap;font-size:.8rem;color:#6b8090">${esc(formatTime(r.time))}</td>
       <td><strong>${esc(r.name)}</strong></td>
       <td>${esc(r.org)}</td>
       <td>${esc(r.jobTitle)}</td>
@@ -244,13 +243,20 @@ window.renderTable = function() {
           : r.sigDocId ? '<span class="sig-loading">載入中…</span>' : '—'
       }</td>
       <td style="white-space:nowrap">${r.signoutTime
-        ? `<span style="color:#5a7ec4;font-weight:600">✓ 已簽退</span><br><span style="font-size:.75rem;color:#9aacbc">${esc(r.signoutTime)}</span>`
+        ? `<span style="color:#5a7ec4;font-weight:600">✓ 已簽退</span><br><span style="font-size:.75rem;color:#9aacbc">${esc(formatTime(r.signoutTime))}</span>`
         : '<span style="color:#d96060">未簽退</span>'
       }</td>
     </tr>`).join('');
 };
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function formatTime(t) {
+  if (!t) return '';
+  const d = new Date(t);
+  if (isNaN(d)) return String(t);
+  return d.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
 
 window.openLightbox = function(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('show');}
 window.closeLightbox = function(){document.getElementById('lightbox').classList.remove('show');}
