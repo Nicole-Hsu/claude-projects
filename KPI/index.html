@@ -251,14 +251,10 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
 <nav id="sb">
   <div id="sb-logo">
     <div class="lg">📊</div>
-    <span>健康暨高齡照顧<br>研發中心 KPI填報</span>
+    <span>KPI填報</span>
   </div>
   <div class="sb-sec">分類</div>
   <div id="sb-groups"><div style="padding:12px 16px;font-size:.75rem;color:#64748b">載入中…</div></div>
-  <div class="sb-add-grp" onclick="showGroupModal(null)">
-    <div class="sb-icon" style="background:rgba(255,255,255,.1);font-size:.85rem;width:24px;height:24px">＋</div>
-    <span>新增組別</span>
-  </div>
 </nav>
 
 <div id="sb-resize"></div>
@@ -280,20 +276,16 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
     <div id="ghdr" style="margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <h2 id="gtitle" style="flex:1;margin:0">載入中…</h2>
-        <div id="stats" style="display:flex;gap:5px;">
-          <div class="spill" onclick="toggleFill('')" id="scTotal"><span class="sblue" id="sT">─</span><span style="color:var(--muted);font-size:.72rem;font-weight:400"> 全部</span></div>
-          <div class="spill" onclick="toggleFill('filled')" id="scFilled">✅ <span class="sgreen" id="sF">─</span><span style="color:var(--muted);font-size:.72rem;font-weight:400"> 已填寫</span></div>
-          <div class="spill" onclick="toggleFill('unfilled')" id="scUnfilled">⬜ <span class="samber" id="sU">─</span><span style="color:var(--muted);font-size:.72rem;font-weight:400"> 未填寫</span></div>
-        </div>
       </div>
     </div>
 
     <div id="fbar">
       <span class="flabel">🔍 負責人</span>
       <div class="fsearch">
-        <input id="nameInput" placeholder="輸入姓名…" oninput="onNameInput(this.value)">
+        <input id="nameInput" placeholder="輸入或選擇姓名…" oninput="onNameInput(this.value)" list="namesList" autocomplete="off">
+        <datalist id="namesList"></datalist>
       </div>
-      <span style="font-size:.74rem;color:var(--muted)">（或直接點卡片上的老師名字）</span>
+      <span style="font-size:.74rem;color:var(--muted)">直接點選名字</span>
       <button class="btn btn-o btn-sm" onclick="clearFilters()" style="margin-left:auto">✕ 清除篩選</button>
     </div>
 
@@ -380,7 +372,12 @@ const ALL_NAMES = ['張怡雅','林志鴻','蔡金杏','簡麗瑜','吳美玲','
                    '楊馥宇','林偉民','張麗娟','羅永桂','院長'];
 
 // ════ Init ════
-window.onload = () => { loadGroups(); loadItems(); };
+window.onload = () => {
+  // 填入姓名 datalist
+  const dl = document.getElementById('namesList');
+  if (dl) ALL_NAMES.forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+  loadGroups(); loadItems();
+};
 
 function loadItems() {
   setLoading(true);
@@ -426,10 +423,6 @@ function buildSidebarGroups() {
       <div class="sb-icon" style="background:${g.color||'#4f46e5'}">${g.icon||'📋'}</div>
       <span class="sb-name">${esc(g.name)}</span>
       <span class="sb-cnt" id="c${g.id}">─</span>
-      <div class="sb-grp-actions">
-        <button class="sb-grp-btn" onclick="event.stopPropagation();showGroupModalById(${g.id})" title="編輯">✎</button>
-        <button class="sb-grp-btn" onclick="event.stopPropagation();doArchiveGroup(${g.id})" title="封存">🗃</button>
-      </div>
     </div>`).join('');
   // Sync Add WI modal group select
   const sel = document.getElementById('wiGrp');
@@ -448,7 +441,6 @@ function render() {
   const isDash = currentGroup === 0;
   document.getElementById('wiList').style.display = isDash?'none':'block';
   document.getElementById('dview').style.display  = isDash?'block':'none';
-  document.getElementById('stats').style.display  = isDash?'none':'flex';
   document.getElementById('fbar').style.display   = isDash?'none':'flex';
 
   if (isDash) { updateGHeader(); renderDash(); return; }
@@ -478,10 +470,6 @@ function render() {
   if (filterFill==='unfilled') items = items.filter(i=>!i._hasFill);
   if (!showArchived) items = items.filter(i=>!isArchived(i.ID));
 
-  const filled = items.filter(i=>i._hasFill).length;
-  document.getElementById('sT').textContent = items.length;
-  document.getElementById('sF').textContent = filled;
-  document.getElementById('sU').textContent = items.length - filled;
   updateGHeader();
 
   const list = document.getElementById('wiList');
@@ -511,9 +499,7 @@ function buildCard(wi, n) {
   const cChips=coOrgs.map(t=>`<span class="pchip" onclick="event.stopPropagation();setPerson('${esc(t)}')" style="cursor:pointer;text-decoration:underline dotted;color:#065f46" title="篩選${esc(t)}">${coav}${t}</span>`).join('');
   const ppl=[
     teachers.length?`<span style="font-size:.68rem;color:var(--navy);font-weight:700">負責教師：</span>${tChips}`:'',
-    coOrgs.length?`<span style="font-size:.68rem;color:var(--navy);font-weight:700;margin-left:6px">協辦人員：</span>${cChips}`:'',
-    ...(wi._units||[]).slice(0,1).map(u=>`<span class="pchip">📋 ${esc(u)}</span>`),
-    wi.Period?`<span class="pchip">📅 ${esc(wi.Period)}</span>`:''
+    coOrgs.length?`<span style="font-size:.68rem;color:var(--navy);font-weight:700;margin-left:6px">協辦人員：</span>${cChips}`:''
   ].filter(Boolean).join('');
 
   const isArch=isArchived(wi.ID);
@@ -525,8 +511,6 @@ function buildCard(wi, n) {
         <div class="wtitle">${esc(wi.Title)}${isArch?' <span style="font-size:.7rem;color:var(--muted)">[封存]</span>':''}</div>
         <div class="wppl">${ppl}</div>
       </div>
-      <button class="fbtn" style="flex-shrink:0;padding:3px 8px;font-size:.75rem;margin-top:1px" onclick="event.stopPropagation();openPeoplePanel('${wi.ID}')" title="人員管理">👤 人員</button>
-      ${badge}
     </div>
     <div class="wbody" id="wb_${wi.ID}">
       <div id="wc2_${wi.ID}"><div class="ld" style="padding:16px"><div class="sp"></div></div></div>
@@ -576,7 +560,32 @@ function buildDetail(d) {
       <div style="border-right:1px solid var(--border)">${buildPlannedBand(d,true)}</div>
       <div>${buildKPIBand(d,true)}</div>
     </div>`;
-  return twoCol + buildFormsBand(d) + buildExecBand(d) + buildExecAdd(d) + buildFooter(d) + buildPlanned(d);
+  // 順序：本月執行狀況(新增表單) → 預計下個月 → 執行狀況 → 工作內容/KPI → 關聯表單 → Footer
+  return buildExecAdd(d) + buildNextMonthBand(d) + buildExecBand(d) + twoCol + buildFormsBand(d) + buildFooter(d) + buildPlanned(d);
+}
+
+// ── 預計下個月工作項目 Band ──
+function buildNextMonthBand(d) {
+  const items = (d.pool_next||[]).slice().reverse(); // 最新在前
+  const rows = items.map(p=>`
+    <div style="display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px dashed #c4b5fd;font-size:.83rem">
+      <div style="flex:1;white-space:pre-wrap;line-height:1.5">${esc(p.Content)}</div>
+      <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delPoolNext('${p.ID}','${d.ID}')">✕</button>
+    </div>`).join('');
+  return `
+  <div class="band" style="background:#faf5ff;border-top:1px solid var(--border)">
+    <div class="bico">📅</div>
+    <div class="bcnt">
+      <div class="btitle" style="color:#7c3aed">預計下個月工作項目</div>
+      <div style="max-height:200px;overflow-y:auto;padding-right:2px;margin-bottom:6px">
+        ${rows||'<span style="color:#a78bfa;font-size:.8rem">尚無預計下月工作</span>'}
+      </div>
+      <div style="display:flex;gap:5px;align-items:flex-end">
+        <textarea id="pnTxt_${d.ID}" style="flex:1;padding:5px 8px;border:1px solid #c4b5fd;border-radius:5px;font-size:.8rem;font-family:inherit;resize:vertical;min-height:54px;background:#fff" placeholder="預計下個月要做的工作…"></textarea>
+        <button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;height:32px" onclick="event.stopPropagation();addPoolNext('${d.ID}')">新增</button>
+      </div>
+    </div>
+  </div>`;
 }
 
 // ── Planned Band (always visible) ──
@@ -599,7 +608,7 @@ function buildPlannedBand(d, inner=false) {
   return `<div class="band band-purple band-closed"${inner?' style="border-top:none;height:100%;box-sizing:border-box"':''}>
     <div class="bico">📋</div>
     <div class="bcnt">
-      <div class="btitle">預計工作內容<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▼</button></div>
+      <div class="btitle">工作內容<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▼</button></div>
       <div style="height:180px;min-height:60px;max-height:600px;overflow-y:auto;margin-bottom:4px;padding-right:2px;resize:vertical;">
         ${prows||(!hidP.length?'<span style="color:var(--muted);font-size:.8rem">尚無預計工作內容</span>':'')}
         ${hidRows}
@@ -709,25 +718,6 @@ function buildKPIBand(d, inner=false) {
       </div>
       ${progressBar}
       ${achRows ? `<div style="background:rgba(255,255,255,.6);border-radius:5px;padding:5px 8px;margin-top:4px">${achRows}</div>` : ''}
-      <div style="background:#f0f9ff;border-radius:6px;padding:7px 8px;margin-top:5px">
-        <div style="font-size:.7rem;color:var(--blue);font-weight:700;margin-bottom:5px">➕ 新增達成記錄</div>
-        <div style="display:flex;gap:5px;align-items:flex-end;flex-wrap:wrap">
-          <div>
-            <div style="font-size:.67rem;color:var(--muted);margin-bottom:2px">★ ${isMilestone?'說明文字':'達成數量'}</div>
-            <input id="achV_${k.ID}" placeholder="${isMilestone?'說明':'填數字'}" style="width:90px;padding:4px 7px;border:2px solid var(--blue);border-radius:5px;font-size:.82rem;font-family:inherit;background:#fff">
-          </div>
-          <div>
-            <div style="font-size:.67rem;color:var(--muted);margin-bottom:2px">民國年</div>
-            <input id="achY_${k.ID}" placeholder="115" style="width:54px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:.78rem;font-family:inherit;background:#fff">
-          </div>
-          <div>
-            <div style="font-size:.67rem;color:var(--muted);margin-bottom:2px">月</div>
-            <input id="achMo_${k.ID}" placeholder="1-12" style="width:70px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:.78rem;font-family:inherit;background:#fff" oninput="validateMonth(this)" type="number" min="1" max="12">
-          </div>
-          <input type="hidden" id="achN_${k.ID}" value="">
-          <button class="btn btn-p btn-sm" style="height:29px" onclick="event.stopPropagation();addKPIAch('${k.ID}','${d.ID}','${esc(kYearStr)}',${isYBool})">記錄</button>
-        </div>
-      </div>
     </div>`;
   }).join('');
 
@@ -740,7 +730,7 @@ function buildKPIBand(d, inner=false) {
   <div class="band band-blue band-closed"${inner?' style="border-top:none;height:100%;box-sizing:border-box"':''}>
     <div class="bico">🎯</div>
     <div class="bcnt">
-      <div class="btitle">KPI 指標<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▼</button></div>
+      <div class="btitle">KPI<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▼</button></div>
       <div style="height:220px;min-height:80px;max-height:700px;overflow-y:auto;padding-right:2px;resize:vertical;">
         ${rows||(!archivedRows?'<span style="color:#94a3b8;font-size:.8rem">尚無KPI</span>':'')}
         ${archivedRows}
@@ -849,7 +839,6 @@ function buildPlanned(d) {
   const uChips = (d.units||[]).map(u=>`
     <span class="ptag" style="background:#f1f5f9;color:#475569">
       ${esc(u.Unit)}
-      <button style="background:none;border:none;cursor:pointer;font-size:.7rem;color:#64748b" onclick="event.stopPropagation();delUnit('${u.ID}','${d.ID}')">✕</button>
     </span>`).join('');
   // Planned rows
   const prows = (d.planned||[]).map(p=>`
@@ -1150,6 +1139,24 @@ function moveSelected(wiId) {
   if(!ids.length){toast('請先勾選要轉入的紀錄','err');return;}
   if(!confirm(`確定將 ${ids.length} 筆轉入累積池？不可復原。`))return;
   google.script.run.withSuccessHandler(()=>{toast('已轉入');inv(wiId);}).withFailureHandler(e=>toast('失敗','err')).moveToPool1(ids);
+}
+
+// ════ Next Month Pool CRUD ════
+function addPoolNext(wiId) {
+  const el = document.getElementById('pnTxt_'+wiId);
+  const content = el ? el.value.trim() : '';
+  if (!content) { toast('請填寫預計下月工作內容','err'); return; }
+  google.script.run
+    .withSuccessHandler(()=>{ toast('已新增'); if(el) el.value=''; inv(wiId); })
+    .withFailureHandler(e=>toast('失敗','err'))
+    .saveToPoolNext({WorkItemID:wiId, Content:content});
+}
+function delPoolNext(id, wiId) {
+  if (!confirm('確定刪除？')) return;
+  google.script.run
+    .withSuccessHandler(()=>{ toast('已刪除'); inv(wiId); })
+    .withFailureHandler(e=>toast('失敗','err'))
+    .deleteFromPoolNext(id);
 }
 
 // ════ Forms CRUD ════

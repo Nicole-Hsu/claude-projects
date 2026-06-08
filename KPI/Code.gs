@@ -12,6 +12,7 @@ const SHEET_NAMES = {
   PLANNED    : '預計工作內容',
   POOL1      : '執行狀況_累積池',
   POOL2      : '執行狀況_本月池',
+  POOL_NEXT  : '預計下月工作',
   FORMS      : '表單連結',
   CONFIG     : '系統設定',
   GROUPS     : '分組設定'
@@ -88,6 +89,7 @@ function initSheets() {
     [SHEET_NAMES.PLANNED,    ['ID','WorkItemID','Content','PlannedDate','Year','CreatedAt']],
     [SHEET_NAMES.POOL1,      ['ID','WorkItemID','Year','Month','Content','TextColor','EntryDate','Source']],
     [SHEET_NAMES.POOL2,      ['ID','WorkItemID','Year','Month','Content','TextColor','EntryDate','EnteredBy']],
+    [SHEET_NAMES.POOL_NEXT,  ['ID','WorkItemID','Content','CreatedAt']],
     [SHEET_NAMES.FORMS,      ['ID','WorkItemID','FormName','FormURL','SummaryURL','CreatedAt']],
     [SHEET_NAMES.CONFIG,     ['Key','Value','UpdatedAt']]
   ];
@@ -331,6 +333,20 @@ function saveToPool2(data) {
 
 function deleteFromPool2(id) { return deleteById(SHEET_NAMES.POOL2, id); }
 
+// ─── Next Month Planned ───────────────────────────────────────
+function getPoolNext(workItemId) { return getRelated(SHEET_NAMES.POOL_NEXT, workItemId); }
+function deleteFromPoolNext(id)  { return deleteById(SHEET_NAMES.POOL_NEXT, id); }
+function saveToPoolNext(data) {
+  const sheet = getSheet(SHEET_NAMES.POOL_NEXT);
+  const now   = new Date().toISOString();
+  const row   = [data.ID||uid('PN'), data.WorkItemID, data.Content, now];
+  if (data.ID) {
+    const ri = findRowIndex(sheet, data.ID);
+    if (ri>0) { row[3]=sheet.getRange(ri,4).getValue(); sheet.getRange(ri,1,1,4).setValues([row]); return {success:true}; }
+  }
+  sheet.appendRow(row); return {success:true};
+}
+
 function moveToPool1(ids) {
   const p2  = getSheet(SHEET_NAMES.POOL2);
   const p1  = getSheet(SHEET_NAMES.POOL1);
@@ -392,9 +408,10 @@ function getWorkItemFull(workItemId) {
   item.teachers = readOnce(SHEET_NAMES.TEACHERS).filter(r => r.WorkItemID === workItemId);
   item.coOrgs   = readOnce(SHEET_NAMES.CO_ORGS).filter(r => r.WorkItemID === workItemId);
   item.planned  = readOnce(SHEET_NAMES.PLANNED).filter(r => r.WorkItemID === workItemId);
-  item.pool1    = readOnce(SHEET_NAMES.POOL1).filter(r => r.WorkItemID === workItemId);
-  item.pool2    = readOnce(SHEET_NAMES.POOL2).filter(r => r.WorkItemID === workItemId);
-  item.forms    = readOnce(SHEET_NAMES.FORMS).filter(r => r.WorkItemID === workItemId);
+  item.pool1     = readOnce(SHEET_NAMES.POOL1).filter(r => r.WorkItemID === workItemId);
+  item.pool2     = readOnce(SHEET_NAMES.POOL2).filter(r => r.WorkItemID === workItemId);
+  item.pool_next = readOnce(SHEET_NAMES.POOL_NEXT).filter(r => r.WorkItemID === workItemId);
+  item.forms     = readOnce(SHEET_NAMES.FORMS).filter(r => r.WorkItemID === workItemId);
   return item;
 }
 
@@ -424,9 +441,10 @@ function getGroupItemsFull(groupId) {
   const allTeach = readOnce(SHEET_NAMES.TEACHERS).filter(r => groupIds.has(r.WorkItemID));
   const allCoOrg = readOnce(SHEET_NAMES.CO_ORGS).filter(r => groupIds.has(r.WorkItemID));
   const allPlan  = readOnce(SHEET_NAMES.PLANNED).filter(r => groupIds.has(r.WorkItemID));
-  const allPool1 = readOnce(SHEET_NAMES.POOL1).filter(r => groupIds.has(r.WorkItemID));
-  const allPool2 = readOnce(SHEET_NAMES.POOL2).filter(r => groupIds.has(r.WorkItemID));
-  const allForms = readOnce(SHEET_NAMES.FORMS).filter(r => groupIds.has(r.WorkItemID));
+  const allPool1    = readOnce(SHEET_NAMES.POOL1).filter(r => groupIds.has(r.WorkItemID));
+  const allPool2    = readOnce(SHEET_NAMES.POOL2).filter(r => groupIds.has(r.WorkItemID));
+  const allPoolNext = readOnce(SHEET_NAMES.POOL_NEXT).filter(r => groupIds.has(r.WorkItemID));
+  const allForms    = readOnce(SHEET_NAMES.FORMS).filter(r => groupIds.has(r.WorkItemID));
 
   return groupItems.map(item => {
     const kpiRows = allKpis.filter(k => k.WorkItemID === item.ID);
@@ -454,9 +472,10 @@ function getGroupItemsFull(groupId) {
     item.teachers = allTeach.filter(r => r.WorkItemID === item.ID);
     item.coOrgs   = allCoOrg.filter(r => r.WorkItemID === item.ID);
     item.planned  = allPlan.filter(r => r.WorkItemID === item.ID);
-    item.pool1    = allPool1.filter(r => r.WorkItemID === item.ID);
-    item.pool2    = allPool2.filter(r => r.WorkItemID === item.ID);
-    item.forms    = allForms.filter(r => r.WorkItemID === item.ID);
+    item.pool1     = allPool1.filter(r => r.WorkItemID === item.ID);
+    item.pool2     = allPool2.filter(r => r.WorkItemID === item.ID);
+    item.pool_next = allPoolNext.filter(r => r.WorkItemID === item.ID);
+    item.forms     = allForms.filter(r => r.WorkItemID === item.ID);
     return item;
   });
 }
