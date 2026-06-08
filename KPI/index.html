@@ -373,6 +373,7 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
 let currentGroup = 1;
 let allItems = [], filterName = '', filterYear = '', filterFill = '', expandedId = null;
 let sidebarGroups = [];
+const _detCache = {}; // wiId → 上次載入的完整資料（stale-while-revalidate 用）
 
 const ALL_NAMES = ['張怡雅','林志鴻','蔡金杏','簡麗瑜','吳美玲','陳妙絹','許瑜庭',
                    '黃惠玲','鄭麗菁','蔡明芬','林淑棻','趙莉芬','王毅新','陳偉婷',
@@ -384,7 +385,10 @@ window.onload = () => { loadGroups(); loadItems(); };
 function loadItems() {
   setLoading(true);
   google.script.run
-    .withSuccessHandler(items => { allItems = items; setLoading(false); updateCounts(); render(); })
+    .withSuccessHandler(items => {
+      allItems = items; setLoading(false); updateCounts(); render();
+      prefetchGroupDetails(currentGroup); // 暖快取，讓點進去時瞬間顯示
+    })
     .withFailureHandler(e => { setLoading(false, e&&e.message?e.message:'伺服器無回應，請重試'); })
     .getAllWorkItems();
 }
@@ -539,16 +543,28 @@ function toggleCard(id) {
 }
 
 // ════ Detail ════
+function _applyBandClosed(cont) {
+  cont.querySelectorAll('.band.band-closed .bcnt>*:not(.btitle)').forEach(el=>el.style.display='none');
+}
+
 function loadDetail(wiId) {
   const cont = document.getElementById('wc2_'+wiId);
   if (cont.dataset.loaded==='1') return;
+  // 有 cache：立即渲染（感覺瞬間），不顯示轉圈
+  if (_detCache[wiId]) {
+    cont.innerHTML = buildDetail(_detCache[wiId]);
+    cont.dataset.loaded = '1';
+    _applyBandClosed(cont);
+    return;
+  }
+  // 無 cache：顯示轉圈等待
   google.script.run
     .withSuccessHandler(d => {
       if (!d) { cont.innerHTML='<div class="emp">載入失敗</div>'; return; }
+      _detCache[wiId] = d;
       cont.innerHTML = buildDetail(d);
       cont.dataset.loaded='1';
-      // 強制套用閉合狀態（CSS 備援）
-      cont.querySelectorAll('.band.band-closed .bcnt>*:not(.btitle)').forEach(el=>el.style.display='none');
+      _applyBandClosed(cont);
     })
     .withFailureHandler(()=>{ cont.innerHTML='<div class="emp">載入失敗</div>'; })
     .getWorkItemFull(wiId);
@@ -782,10 +798,10 @@ function buildExecBand(d) {
 
   const hasContent = p1 || p2;
   return `
-  <div class="band band-green band-closed">
+  <div class="band band-green">
     <div class="bico">✅</div>
     <div class="bcnt">
-      <div class="btitle">執行狀況<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▼</button></div>
+      <div class="btitle">執行狀況<button class="band-toggle" onclick="event.stopPropagation();toggleBand(this)">▲</button></div>
       <div style="height:150px;min-height:60px;max-height:800px;overflow-y:auto;padding-right:2px;resize:vertical;">
         ${hasContent ? '' : '<span style="color:#94a3b8;font-size:.8rem">尚無執行紀錄</span>'}
         ${p2}${p1}
@@ -957,11 +973,23 @@ function renderDash() {
     .getDashboard('','');
 }
 
+// ════ Group prefetch ════
+function prefetchGroupDetails(groupId) {
+  if (!groupId || groupId === 0) return;
+  google.script.run
+    .withSuccessHandler(items => {
+      (items || []).forEach(d => { if (d && d.ID) _detCache[d.ID] = d; });
+    })
+    .withFailureHandler(() => {})
+    .getGroupItemsFull(groupId);
+}
+
 // ════ Group / Filter ════
 function switchGroup(g) {
   currentGroup = Number(g);
   document.querySelectorAll('#sb-groups .sb-item').forEach(el=>el.classList.toggle('active',Number(el.dataset.g)===currentGroup));
   render();
+  prefetchGroupDetails(currentGroup);
 }
 function setPerson(n) {
   filterName = filterName===n?'':n;
@@ -1311,10 +1339,24 @@ function openPeoplePanel(wiId){
 // ════ Utils ════
 // reloadList=true 才重載側欄卡片清單（人員/池操作需要，KPI/預計/表單不需要）
 function inv(wiId, reloadList) {
-  const cont=document.getElementById('wc2_'+wiId);
-  if(cont){cont.dataset.loaded='0';cont.innerHTML='<div class="ld" style="padding:14px"><div class="sp"></div></div>';}
-  loadDetail(wiId);
-  if(reloadList===true) loadItems();
+  const cont = document.getElementById('wc2_'+wiId);
+  // 靜默背景刷新：舊內容保留，新資料回來後再換上（不顯示轉圈）
+  if (cont) cont.dataset.loaded = '0';
+  google.script.run
+    .withSuccessHandler(d => {
+      if (!d) return;
+      _detCache[wiId] = d;
+      const c = document.getElementById('wc2_'+wiId);
+      if (c) { c.innerHTML = buildDetail(d); c.dataset.loaded = '1'; _applyBandClosed(c); }
+    })
+    .withFailureHandler(() => {})
+    .getWorkItemFull(wiId);
+  if (reloadList === true) {
+    google.script.run
+      .withSuccessHandler(items => { allItems = items; updateCounts(); })
+      .withFailureHandler(() => {})
+      .getAllWorkItems();
+  }
 }
 // 收合/展開 band 區塊
 function toggleBand(btn){

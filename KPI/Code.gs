@@ -38,15 +38,17 @@ function doGet() {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
+let _ssCache = null; // 同一次 GAS 執行內快取 Spreadsheet 物件
 function ss() {
+  if (_ssCache) return _ssCache;
   const props = PropertiesService.getScriptProperties();
   let id = props.getProperty('SPREADSHEET_ID');
   if (id) {
-    try { return SpreadsheetApp.openById(id); } catch(e) {}
+    try { _ssCache = SpreadsheetApp.openById(id); return _ssCache; } catch(e) {}
   }
-  const newSS = SpreadsheetApp.create('健康暨高齡照顧研發中心_KPI');
-  props.setProperty('SPREADSHEET_ID', newSS.getId());
-  return newSS;
+  _ssCache = SpreadsheetApp.create('健康暨高齡照顧研發中心_KPI');
+  props.setProperty('SPREADSHEET_ID', _ssCache.getId());
+  return _ssCache;
 }
 
 function getSheet(name) {
@@ -346,14 +348,29 @@ function moveToPool1(ids) {
 
 // ─── Full Item Detail ─────────────────────────────────────────
 function getWorkItemFull(workItemId) {
-  const items = sheetToObjects(getSheet(SHEET_NAMES.WORK_ITEMS));
-  const item  = items.find(r => r.ID === workItemId);
+  // 每張表只讀一次，避免重複 Sheets API 呼叫
+  const spreadsheet = ss();
+  function readOnce(name) {
+    const sheet = spreadsheet.getSheetByName(name);
+    if (!sheet) return [];
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    const headers = data[0];
+    return data.slice(1).filter(r => r[0]).map(r => {
+      const o = {}; headers.forEach((h, i) => o[h] = r[i]); return o;
+    });
+  }
+
+  const item = readOnce(SHEET_NAMES.WORK_ITEMS).find(r => r.ID === workItemId);
   if (!item) return null;
-  item.kpis = getKPIs(workItemId).map(k => {
-    const achs = getKPIAchievements(k.ID);
+
+  const kpiRows = readOnce(SHEET_NAMES.KPIS).filter(k => k.WorkItemID === workItemId);
+  const allAchs = readOnce(SHEET_NAMES.KPI_ACH); // 讀一次，下面各 KPI 自行篩選
+
+  item.kpis = kpiRows.map(k => {
+    const achs = allAchs.filter(a => a.KPIID === k.ID);
     k.achievements = achs;
     k.achievementPct = calcAchievementPct(k, achs);
-    // 分年度但未指定特定年→各年獨立計算
     const isYB = k.IsYearBased === true || String(k.IsYearBased).toLowerCase() === 'true';
     const kYear = String(k.Year || '').trim();
     if (isYB && !kYear && (k.TargetType||'number') !== 'milestone') {
@@ -370,14 +387,78 @@ function getWorkItemFull(workItemId) {
     }
     return k;
   });
-  item.units    = getUnits(workItemId);
-  item.teachers = getTeachers(workItemId);
-  item.coOrgs   = getCoOrgs(workItemId);
-  item.planned  = getPlanned(workItemId);
-  item.pool1    = getPool1(workItemId);
-  item.pool2    = getPool2(workItemId);
-  item.forms    = getForms(workItemId);
+
+  item.units    = readOnce(SHEET_NAMES.UNITS).filter(r => r.WorkItemID === workItemId);
+  item.teachers = readOnce(SHEET_NAMES.TEACHERS).filter(r => r.WorkItemID === workItemId);
+  item.coOrgs   = readOnce(SHEET_NAMES.CO_ORGS).filter(r => r.WorkItemID === workItemId);
+  item.planned  = readOnce(SHEET_NAMES.PLANNED).filter(r => r.WorkItemID === workItemId);
+  item.pool1    = readOnce(SHEET_NAMES.POOL1).filter(r => r.WorkItemID === workItemId);
+  item.pool2    = readOnce(SHEET_NAMES.POOL2).filter(r => r.WorkItemID === workItemId);
+  item.forms    = readOnce(SHEET_NAMES.FORMS).filter(r => r.WorkItemID === workItemId);
   return item;
+}
+
+// ─── Batch Full Detail for a Group ───────────────────────────
+// 一次讀完所有 sheet，同時建構整組所有工作項目的完整資料
+function getGroupItemsFull(groupId) {
+  const spreadsheet = ss();
+  function readOnce(name) {
+    const sheet = spreadsheet.getSheetByName(name);
+    if (!sheet) return [];
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    const headers = data[0];
+    return data.slice(1).filter(r => r[0]).map(r => {
+      const o = {}; headers.forEach((h, i) => o[h] = r[i]); return o;
+    });
+  }
+
+  const groupItems = readOnce(SHEET_NAMES.WORK_ITEMS).filter(r => String(r.GroupID) === String(groupId));
+  if (!groupItems.length) return [];
+  const groupIds = new Set(groupItems.map(i => i.ID));
+
+  const allKpis  = readOnce(SHEET_NAMES.KPIS).filter(k => groupIds.has(k.WorkItemID));
+  const kpiIds   = new Set(allKpis.map(k => k.ID));
+  const allAchs  = readOnce(SHEET_NAMES.KPI_ACH).filter(a => kpiIds.has(a.KPIID));
+  const allUnits = readOnce(SHEET_NAMES.UNITS).filter(r => groupIds.has(r.WorkItemID));
+  const allTeach = readOnce(SHEET_NAMES.TEACHERS).filter(r => groupIds.has(r.WorkItemID));
+  const allCoOrg = readOnce(SHEET_NAMES.CO_ORGS).filter(r => groupIds.has(r.WorkItemID));
+  const allPlan  = readOnce(SHEET_NAMES.PLANNED).filter(r => groupIds.has(r.WorkItemID));
+  const allPool1 = readOnce(SHEET_NAMES.POOL1).filter(r => groupIds.has(r.WorkItemID));
+  const allPool2 = readOnce(SHEET_NAMES.POOL2).filter(r => groupIds.has(r.WorkItemID));
+  const allForms = readOnce(SHEET_NAMES.FORMS).filter(r => groupIds.has(r.WorkItemID));
+
+  return groupItems.map(item => {
+    const kpiRows = allKpis.filter(k => k.WorkItemID === item.ID);
+    item.kpis = kpiRows.map(k => {
+      const achs = allAchs.filter(a => a.KPIID === k.ID);
+      k.achievements = achs;
+      k.achievementPct = calcAchievementPct(k, achs);
+      const isYB = k.IsYearBased === true || String(k.IsYearBased).toLowerCase() === 'true';
+      const kYear = String(k.Year || '').trim();
+      if (isYB && !kYear && (k.TargetType||'number') !== 'milestone') {
+        const target = parseFloat(k.TargetValue);
+        const years = [...new Set(achs.map(a => String(a.Year||'').trim()).filter(y=>y))].sort();
+        k.yearlyAchievements = years.map(yr => {
+          const yAchs = achs.filter(a => String(a.Year||'').trim() === yr);
+          const actual = yAchs.reduce((s,r) => s + (parseFloat(r.ActualValue)||0), 0);
+          const pct = (!isNaN(target) && target > 0) ? Math.min(Math.round(actual/target*100),100) : null;
+          return {year: yr, actual, pct};
+        });
+      } else {
+        k.yearlyAchievements = null;
+      }
+      return k;
+    });
+    item.units    = allUnits.filter(r => r.WorkItemID === item.ID);
+    item.teachers = allTeach.filter(r => r.WorkItemID === item.ID);
+    item.coOrgs   = allCoOrg.filter(r => r.WorkItemID === item.ID);
+    item.planned  = allPlan.filter(r => r.WorkItemID === item.ID);
+    item.pool1    = allPool1.filter(r => r.WorkItemID === item.ID);
+    item.pool2    = allPool2.filter(r => r.WorkItemID === item.ID);
+    item.forms    = allForms.filter(r => r.WorkItemID === item.ID);
+    return item;
+  });
 }
 
 // ─── Filters ─────────────────────────────────────────────────
