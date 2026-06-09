@@ -787,9 +787,9 @@ function buildKPIBand(d, inner=false) {
 function buildFormsBand(d) {
   const pairs = (d.forms||[]).map(f=>`
     <div style="display:flex;flex-direction:column;gap:4px;min-width:120px">
-      ${f.FormURL ? `<a class="fpill" href="${esc(f.FormURL)}" target="_blank" onclick="event.stopPropagation()">📄 ${esc(f.FormName)}</a>` : ''}
-      ${f.SummaryURL ? `<a class="fpill fpill-sum" href="${esc(f.SummaryURL)}" target="_blank" onclick="event.stopPropagation()">📊 ${esc(f.FormName)}彙整</a>` : ''}
-      ${!f.FormURL&&!f.SummaryURL ? `<span class="fpill" style="opacity:.5">${esc(f.FormName)}</span>` : ''}
+      ${f.FormURL ? `<a class="fpill" href="${esc(f.FormURL)}" target="_blank" onclick="event.stopPropagation()">📄 ${esc(f.FormName.replace(/表單/g,''))}</a>` : ''}
+      ${f.SummaryURL ? `<a class="fpill fpill-sum" href="${esc(f.SummaryURL)}" target="_blank" onclick="event.stopPropagation()">📊 ${esc(f.FormName.replace(/表單/g,''))}彙整</a>` : ''}
+      ${!f.FormURL&&!f.SummaryURL ? `<span class="fpill" style="opacity:.5">${esc(f.FormName.replace(/表單/g,''))}</span>` : ''}
     </div>`).join('');
   return `
   <div class="band band-amber band-closed">
@@ -1030,7 +1030,7 @@ function updateRPanel() {
 
   const html = _allForms.map(f => {
     if (!f.FormURL) return '';
-    return `<div style="padding:4px 10px"><a class="rp-link" href="${esc(f.FormURL)}" target="_blank">📄 ${esc(f.FormName)}</a></div><div class="rp-div"></div>`;
+    return `<div style="padding:4px 10px"><a class="rp-link" href="${esc(f.FormURL)}" target="_blank">📄 ${esc(f.FormName.replace(/表單/g,''))}</a></div><div class="rp-div"></div>`;
   }).join('');
 
   const fixed = `<div style="padding:4px 10px"><a class="rp-link" href="https://docs.google.com/spreadsheets/d/1NCP7Bh0k09GN5R_O8WP2ihFmifnEec7U2OE4pjqjiG0/edit?gid=629883937#gid=629883937" target="_blank">📊 彙總表</a></div><div class="rp-div"></div>`;
