@@ -34,7 +34,7 @@ const EXPORT_FOLDER_ID = '17pL-hrb_WL3kpOZMq7a_i4I2oWxaRDPZ';
 // ─── Entry Point ─────────────────────────────────────────────
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')
-    .setTitle('健康暨高齡照顧研發中心 KPI填報')
+    .setTitle('KPI填報')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -47,7 +47,7 @@ function ss() {
   if (id) {
     try { _ssCache = SpreadsheetApp.openById(id); return _ssCache; } catch(e) {}
   }
-  _ssCache = SpreadsheetApp.create('健康暨高齡照顧研發中心_KPI');
+  _ssCache = SpreadsheetApp.create('KPI填報');
   props.setProperty('SPREADSHEET_ID', _ssCache.getId());
   return _ssCache;
 }

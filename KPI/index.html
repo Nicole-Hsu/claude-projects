@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>健康暨高齡照顧研發中心 KPI 填報</title>
+<title>KPI 填報</title>
 <style>
 :root{
   --sw:220px;
-  --rw:270px;
+  --rw:220px;
   --navy:#1e293b; --navy-h:rgba(255,255,255,.06);
   --blue:#2563eb; --blue-l:#eff6ff; --blue-b:#bfdbfe;
   --green:#16a34a; --green-l:#f0fdf4; --green-b:#bbf7d0;
@@ -42,13 +42,13 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
 /* ── Right Panel ── */
 #rp-resize{position:fixed;right:calc(var(--rw) - 4px);top:0;bottom:0;width:8px;cursor:col-resize;z-index:200;}
 #rp-resize:hover,#rp-resize.dragging{background:rgba(99,102,241,.35);}
-#rpanel{width:var(--rw);background:#fff;border-left:1px solid var(--border);position:fixed;top:0;right:0;bottom:0;overflow-y:auto;z-index:90;display:flex;flex-direction:column;}
-#rp-hdr{padding:14px 14px 10px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:1;}
+#rpanel{width:var(--rw);background:#f0f4ff;border-left:1px solid var(--border);position:fixed;top:0;right:0;bottom:0;overflow-y:auto;z-index:90;display:flex;flex-direction:column;}
+#rp-hdr{padding:14px 14px 10px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);background:#f0f4ff;position:sticky;top:0;z-index:1;}
 #rp-hdr span{font-size:1rem;font-weight:700;color:var(--navy);display:block;text-transform:none;letter-spacing:0;}
 #rp-body{flex:1;overflow-y:auto;padding-bottom:20px;}
 .rp-wi{padding:9px 12px 5px;}
 .rp-wi-name{font-size:.73rem;font-weight:700;color:var(--navy);margin-bottom:4px;line-height:1.4;}
-.rp-link{display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;font-size:.76rem;color:var(--blue);text-decoration:none;margin-bottom:2px;transition:background .1s;}
+.rp-link{display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;font-size:.82rem;color:var(--blue);text-decoration:none;margin-bottom:2px;transition:background .1s;}
 .rp-link:hover{background:var(--blue-l);}
 .rp-sum{color:var(--green);}
 .rp-sum:hover{background:var(--green-l);}
@@ -281,7 +281,6 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
 <div id="rpanel">
   <div id="rp-hdr">
     <span>📋 表單</span>
-    <span style="margin-top:2px">表單連結</span>
   </div>
   <div id="rp-body"><div class="ld" style="padding:24px;font-size:.8rem;text-align:center">載入中…<br><div class="sp" style="margin:10px auto"></div></div></div>
 </div>
@@ -295,7 +294,6 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
     <button class="tb-btn" onclick="changeFs(0)" title="重設">↺</button>
     <button class="tb-btn" onclick="changeFs(1)">A+</button>
     <div class="tb-div"></div>
-    <button class="tb-btn" onclick="showAddWI()">＋ 新增工作項目</button>
     <button class="tb-btn" onclick="reloadItems()">↻ 重新整理</button>
   </div>
 
@@ -1023,13 +1021,12 @@ function updateRPanel() {
   if (!_allForms.length) { body.innerHTML = '<div class="emp">尚無表單</div>'; return; }
 
   const html = _allForms.map(f => {
-    let out = '';
-    if (f.FormURL)    out += `<a class="rp-link" href="${esc(f.FormURL)}" target="_blank">📄 ${esc(f.FormName)}</a>`;
-    if (f.SummaryURL) out += `<a class="rp-link rp-sum" href="${esc(f.SummaryURL)}" target="_blank">📊 ${esc(f.FormName)}</a>`;
-    return out ? `<div style="padding:4px 10px">${out}</div><div class="rp-div"></div>` : '';
+    if (!f.FormURL) return '';
+    return `<div style="padding:4px 10px"><a class="rp-link" href="${esc(f.FormURL)}" target="_blank">📄 ${esc(f.FormName)}</a></div><div class="rp-div"></div>`;
   }).join('');
 
-  body.innerHTML = html || '<div class="emp">尚無表單連結</div>';
+  const fixed = `<div style="padding:4px 10px"><a class="rp-link" href="https://docs.google.com/spreadsheets/d/1NCP7Bh0k09GN5R_O8WP2ihFmifnEec7U2OE4pjqjiG0/edit?gid=629883937#gid=629883937" target="_blank">📊 彙總表</a></div><div class="rp-div"></div>`;
+  body.innerHTML = (html || '<div class="emp">尚無表單連結</div>') + fixed;
 }
 
 // ════ Group prefetch ════
