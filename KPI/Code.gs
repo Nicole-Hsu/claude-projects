@@ -334,10 +334,28 @@ function saveToPool2(data) {
 function deleteFromPool2(id) { return deleteById(SHEET_NAMES.POOL2, id); }
 
 // ─── Next Month Planned ───────────────────────────────────────
-function getPoolNext(workItemId) { return getRelated(SHEET_NAMES.POOL_NEXT, workItemId); }
-function deleteFromPoolNext(id)  { return deleteById(SHEET_NAMES.POOL_NEXT, id); }
+function _ensurePoolNext() {
+  let sheet = ss().getSheetByName(SHEET_NAMES.POOL_NEXT);
+  if (!sheet) {
+    sheet = ss().insertSheet(SHEET_NAMES.POOL_NEXT);
+    sheet.appendRow(['ID','WorkItemID','Content','CreatedAt']);
+    sheet.getRange(1,1,1,4).setBackground('#4472C4').setFontColor('#fff').setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+function getPoolNext(workItemId) {
+  const sheet = ss().getSheetByName(SHEET_NAMES.POOL_NEXT);
+  if (!sheet) return [];
+  return sheetToObjects(sheet).filter(r => r.WorkItemID === workItemId);
+}
+function deleteFromPoolNext(id) {
+  const sheet = ss().getSheetByName(SHEET_NAMES.POOL_NEXT);
+  if (!sheet) return {success:false};
+  return deleteById(SHEET_NAMES.POOL_NEXT, id);
+}
 function saveToPoolNext(data) {
-  const sheet = getSheet(SHEET_NAMES.POOL_NEXT);
+  const sheet = _ensurePoolNext();
   const now   = new Date().toISOString();
   const row   = [data.ID||uid('PN'), data.WorkItemID, data.Content, now];
   if (data.ID) {
@@ -345,6 +363,28 @@ function saveToPoolNext(data) {
     if (ri>0) { row[3]=sheet.getRange(ri,4).getValue(); sheet.getRange(ri,1,1,4).setValues([row]); return {success:true}; }
   }
   sheet.appendRow(row); return {success:true};
+}
+function updatePoolNext(data) {
+  const sheet = ss().getSheetByName(SHEET_NAMES.POOL_NEXT);
+  if (!sheet) return {success:false};
+  const ri = findRowIndex(sheet, data.ID);
+  if (ri < 0) return {success:false};
+  sheet.getRange(ri, 3).setValue(data.Content);
+  return {success:true};
+}
+function moveNextToPool2(ids, year, month) {
+  const pNext = ss().getSheetByName(SHEET_NAMES.POOL_NEXT);
+  if (!pNext) return {success:false};
+  const p2  = getSheet(SHEET_NAMES.POOL2);
+  const now = new Date().toISOString();
+  const vals = pNext.getDataRange().getValues();
+  for (let i = vals.length-1; i >= 1; i--) {
+    if (ids.indexOf(String(vals[i][0])) >= 0) {
+      p2.appendRow([uid('P2'), vals[i][1], year, month, vals[i][2], '#dc2626', now, '從下月計畫轉入']);
+      pNext.deleteRow(i+1);
+    }
+  }
+  return {success:true};
 }
 
 function moveToPool1(ids) {
@@ -636,6 +676,17 @@ function exportToSheet(workItemId, opts) {
   }
 
   return {success:true, url:newSS.getUrl(), title:title};
+}
+
+// ─── All Forms (deduped by FormName) ─────────────────────────
+function getAllForms() {
+  const rows = sheetToObjects(getSheet(SHEET_NAMES.FORMS));
+  const seen = new Set();
+  return rows.filter(f => {
+    if (!f.FormName || seen.has(f.FormName)) return false;
+    seen.add(f.FormName);
+    return true;
+  });
 }
 
 // ─── Groups CRUD ──────────────────────────────────────────────
