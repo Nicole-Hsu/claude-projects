@@ -1073,3 +1073,36 @@ function populateInitialData() {
     P1.appendRow(['P1_'+String(i+1).padStart(3,'0'),wid,a.yr,a.mo,a.c,'#000000',now,'初始資料匯入']);
   });
 }
+
+// ─── 新增參訪表單到其他行政組第7項（執行一次即可）────────────────
+function addVisitForm() {
+  const wiSheet   = ss().getSheetByName('工作項目');
+  const formSheet = ss().getSheetByName('表單連結');
+
+  // 找 GroupID=6、ItemNo=7 的工作項目
+  const wiData = wiSheet.getDataRange().getValues();
+  let targetId = null;
+  for (let i = 1; i < wiData.length; i++) {
+    if (String(wiData[i][1]) === '6' && String(wiData[i][3]) === '7') {
+      targetId = wiData[i][0];
+      break;
+    }
+  }
+
+  if (!targetId) {
+    Logger.log('❌ 找不到其他行政組第7項工作項目');
+    return;
+  }
+  Logger.log('✅ 找到工作項目 ID: ' + targetId);
+
+  const now = new Date().toISOString();
+  formSheet.appendRow([
+    'FL_' + Date.now(),
+    targetId,
+    '參訪表單',
+    'https://docs.google.com/spreadsheets/d/1Uxb94MgWaRRZ0adbGMlpW6bw_8c7VM_648OS0WLhV9k/edit?gid=858324363#gid=858324363',
+    'https://docs.google.com/spreadsheets/d/1NCP7Bh0k09GN5R_O8WP2ihFmifnEec7U2OE4pjqjiG0/edit?gid=629883937#gid=629883937',
+    now
+  ]);
+  Logger.log('✅ 參訪表單已新增到工作項目 ' + targetId);
+}
