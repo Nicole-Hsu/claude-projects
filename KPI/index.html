@@ -153,7 +153,7 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
 
 /* Exec add form */
 .eadd{background:var(--green-l);border-top:1px solid var(--green-b);padding:12px 16px;}
-.eadd-title{font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
+.eadd-title{font-size:.92rem;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
 .erow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
 .erow input,.erow select{padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:.8rem;font-family:inherit;background:#fff;}
 .eta{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:inherit;resize:vertical;min-height:58px;margin-bottom:6px;}
@@ -410,7 +410,8 @@ const _openPanels = new Set(); // 追蹤目前展開的 ppanel id，inv() 重建
 
 const ALL_NAMES = ['張怡雅','林志鴻','蔡金杏','簡麗瑜','吳美玲','陳妙絹','許瑜庭',
                    '黃惠玲','鄭麗菁','蔡明芬','林淑棻','趙莉芬','王毅新','陳偉婷',
-                   '楊馥宇','林偉民','張麗娟','羅永桂','院長'];
+                   '楊馥宇','林偉民','張麗娟','羅永桂','院長']
+                   .sort((a,b)=>a.localeCompare(b,'zh-TW',{collation:'stroke'}));
 
 // ════ Init ════
 window.onload = () => {
