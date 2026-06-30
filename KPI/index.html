@@ -807,7 +807,7 @@ function buildFormsBand(d) {
 // ── Exec Band ──
 function buildExecBand(d) {
   // 累積池：最新在前
-  const p1 = (d.pool1||[])
+  const p1 = [...(d.pool1||[])].reverse()
     .sort((a,b)=>Number(b.Year)-Number(a.Year)||Number(b.Month)-Number(a.Month))
     .map(p=>`<div class="eentry"><div class="emeta">${p.Year||''}年 ${p.Month||''}月</div><div class="etext" style="color:${p.TextColor||'#1e293b'}">${esc(p.Content)}</div></div>`).join('');
 
