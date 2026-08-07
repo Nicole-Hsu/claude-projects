@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 工作筆記(cockpit): 工作筆記_sign_in_systemII.md
+> 本專案共用 cockpit（Claude / Codex / Antigravity 都寫同一份）。
+> Obsidian vault：`D:\我的雲端硬碟\Obsidian_第二大腦\claude專案\`；cockpit：`工作筆記_sign_in_systemII.md`。
+> 開工讀它、收工寫它，進度不要混進共用 `工作筆記.md`。
+
 ## What this repo is
 
 `claude-projects` (GitHub: `Nicole-Hsu/claude-projects`) is a monorepo of self-contained
