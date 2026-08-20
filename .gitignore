@@ -14,3 +14,7 @@ credentials.*
 # Node.js
 node_modules/
 package-lock.json
+
+# 照服員術科試務（技能檢定內部作業資料，工作計畫明定不得隨意公開，勿推送至公開 repo）
+照服員/
+即測即評即發證/
