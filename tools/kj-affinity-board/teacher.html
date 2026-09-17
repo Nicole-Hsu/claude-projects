@@ -38,6 +38,8 @@ button, input, select, textarea { font-family: inherit; }
 .note-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .88rem; }
 .note-row .del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: .8rem; }
 .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .74rem; background: var(--ok); color: #fff; }
+.cat-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px 5px 12px; border-radius: 999px; background: #f3ead9; font-size: .82rem; }
+.cat-chip button { border: none; background: none; color: var(--text-dim); cursor: pointer; font-size: .9rem; line-height: 1; padding: 2px; }
 </style>
 </head>
 <body>
@@ -102,6 +104,15 @@ button, input, select, textarea { font-family: inherit; }
         <div id="roomLink"></div>
         <div id="qrBox" style="margin-top:10px;"></div>
       </div>
+    </div>
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+      <div style="font-size:.82rem;font-weight:600;color:var(--text-mid);margin-bottom:8px;">分類欄位</div>
+      <div id="catList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+      <div class="row">
+        <input id="newCatInput" placeholder="新增分類，例如：溝通" style="flex:2;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:.95rem;background:#fafafa;">
+        <button class="btn secondary" id="addCatBtn" style="flex:1;">新增分類</button>
+      </div>
+      <div class="err" id="catErr"></div>
     </div>
   </div>
 
@@ -267,6 +278,30 @@ function openActiveRoom(question) {
   document.getElementById('qrBox').innerHTML = '';
   new QRCode(document.getElementById('qrBox'), { text: url, width: 140, height: 140 });
 
+  onSnapshot(collection(db, 'rooms', roomId, 'categories'), snap => {
+    const cats = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const list = document.getElementById('catList');
+    list.innerHTML = '';
+    if (!cats.length) {
+      const hint = document.createElement('div');
+      hint.style.cssText = 'font-size:.82rem;color:var(--danger);';
+      hint.textContent = '目前沒有任何分類欄位，學生會沒地方可以歸類便利貼，請在下面新增';
+      list.appendChild(hint);
+    }
+    cats.forEach(c => {
+      const chip = document.createElement('span');
+      chip.className = 'cat-chip';
+      const label = document.createElement('span');
+      label.textContent = c.label;
+      const del = document.createElement('button');
+      del.textContent = '✕';
+      del.setAttribute('aria-label', '刪除分類 ' + c.label);
+      del.addEventListener('click', () => deleteDoc(doc(db, 'rooms', roomId, 'categories', c.id)));
+      chip.appendChild(label); chip.appendChild(del);
+      list.appendChild(chip);
+    });
+  });
+
   getDocs(collection(db, 'classes', classId, 'students')).then(rosterSnap => {
     const roster = rosterSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     document.getElementById('rosterTotal').textContent = roster.length;
@@ -312,6 +347,22 @@ function openActiveRoom(question) {
     });
   });
 }
+
+document.getElementById('addCatBtn').addEventListener('click', async () => {
+  const input = document.getElementById('newCatInput');
+  const errEl = document.getElementById('catErr');
+  errEl.textContent = '';
+  const label = input.value.trim();
+  if (!label) { errEl.textContent = '請輸入分類名稱'; return; }
+  try {
+    const existing = await getDocs(collection(db, 'rooms', roomId, 'categories'));
+    const nextOrder = existing.size;
+    await setDoc(doc(db, 'rooms', roomId, 'categories', 'cat' + Date.now()), { label, order: nextOrder });
+    input.value = '';
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
 </script>
 </body>
 </html>
