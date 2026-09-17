@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KJ 法課堂工具 — 老師後台</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --bg: #fdf6ec; --card: #fff; --accent: #e08a3e; --accent-dark: #b96a24;
+  --text: #3a2e22; --text-mid: #7a6a5a; --text-dim: #ab9c8c;
+  --border: rgba(0,0,0,.10); --radius: 14px; --danger: #d96060; --ok: #4a9e78;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { min-height: 100%; background: var(--bg); font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; color: var(--text); }
+button, input, select, textarea { font-family: inherit; }
+#header { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; padding: 16px 20px; }
+#header h1 { font-size: 1.15rem; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 18px 16px 60px; }
+.card { background: var(--card); border-radius: var(--radius); box-shadow: 0 2px 12px rgba(0,0,0,.08); padding: 20px; margin-bottom: 16px; }
+.card h2 { font-size: 1rem; margin-bottom: 14px; color: var(--text-mid); }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: .82rem; font-weight: 600; color: var(--text-mid); margin-bottom: 6px; }
+.field input, .field textarea, .field select { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: .95rem; background: #fafafa; }
+.field textarea { min-height: 100px; resize: vertical; }
+.btn { display: inline-block; padding: 11px 20px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; font-size: .92rem; }
+.btn:active { background: var(--accent-dark); }
+.btn.secondary { background: #eee; color: var(--text); }
+.btn:disabled { background: #ccc; cursor: not-allowed; }
+.err { color: var(--danger); font-size: .82rem; margin-top: 8px; }
+.hidden { display: none !important; }
+.row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 140px; }
+#roomLink { font-size: .9rem; color: var(--accent-dark); word-break: break-all; }
+#qrBox { background: #fff; padding: 8px; border-radius: 10px; display: inline-block; }
+.joined-list { font-size: .85rem; }
+.joined-list div { padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+.note-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .88rem; }
+.note-row .del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: .8rem; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .74rem; background: var(--ok); color: #fff; }
+</style>
+</head>
+<body>
+<div id="header"><h1>KJ 法課堂工具 — 老師後台</h1></div>
+<div class="wrap">
+
+  <div class="card" id="loginCard">
+    <h2>登入</h2>
+    <button class="btn" id="loginBtn">使用 Google 登入</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <div class="card hidden" id="classCard">
+    <h2>班級</h2>
+    <div class="field">
+      <label>選擇既有班級</label>
+      <select id="classSelect"><option value="">— 新增班級 —</option></select>
+    </div>
+    <div class="field" id="newClassField">
+      <label>新班級名稱</label>
+      <input id="newClassName" placeholder="例如 三年一班">
+    </div>
+    <button class="btn" id="useClassBtn">使用這個班級</button>
+    <div class="err" id="classErr"></div>
+  </div>
+
+  <div class="card hidden" id="rosterCard">
+    <h2>班級名單（姓名＋學號，一行一位）</h2>
+    <div class="field">
+      <textarea id="rosterInput" placeholder="陳小安,12&#10;林小婷,05&#10;黃小宇,19"></textarea>
+    </div>
+    <button class="btn" id="saveRosterBtn">儲存名單</button>
+    <span id="rosterCount" style="margin-left:10px;font-size:.82rem;color:var(--text-mid);"></span>
+    <div class="err" id="rosterErr"></div>
+  </div>
+
+  <div class="card hidden" id="roomCard">
+    <h2>開一個新房間</h2>
+    <div class="field">
+      <label>本次議題／問題</label>
+      <input id="questionInput" placeholder="例如：我們社區怎麼設計會更友善？">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>分類欄位（逗號分隔）</label>
+        <input id="categoriesInput" placeholder="交通,綠地,安全" value="交通,綠地,安全">
+      </div>
+      <div class="field">
+        <label>每人最多發幾則（0＝不限）</label>
+        <input id="maxNotesInput" type="number" min="0" value="3">
+      </div>
+    </div>
+    <button class="btn" id="createRoomBtn">產生房間</button>
+    <div class="err" id="roomErr"></div>
+  </div>
+
+  <div class="card hidden" id="activeRoomCard">
+    <h2>目前房間 <span class="badge" id="activeBadge">進行中</span></h2>
+    <p style="font-weight:700;margin-bottom:10px;" id="activeQuestion"></p>
+    <div class="row" style="align-items:center;">
+      <div>
+        <div id="roomLink"></div>
+        <div id="qrBox" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="attendanceCard">
+    <h2>已加入名單（<span id="joinedCount">0</span> 人）</h2>
+    <div class="joined-list" id="joinedList"></div>
+  </div>
+
+  <div class="card hidden" id="moderationCard">
+    <h2>便利貼列表（可刪除不當內容）</h2>
+    <div id="notesList"></div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js';
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged
+} from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js';
+import {
+  getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where,
+  writeBatch, onSnapshot, deleteDoc, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
+
+// TODO: 換成實際的 Firebase 專案設定（目前還沒有對應的 Firebase 專案，見 README.md）
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let uid = null, classId = null, roomId = null;
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) { document.getElementById('loginErr').textContent = e.message; }
+});
+
+onAuthStateChanged(auth, async user => {
+  if (!user) return;
+  uid = user.uid;
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('classCard').classList.remove('hidden');
+  const snap = await getDocs(query(collection(db, 'classes'), where('teacherId', '==', uid)));
+  const sel = document.getElementById('classSelect');
+  snap.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.id; opt.textContent = d.data().name;
+    sel.appendChild(opt);
+  });
+});
+
+document.getElementById('classSelect').addEventListener('change', e => {
+  document.getElementById('newClassField').classList.toggle('hidden', !!e.target.value);
+});
+
+document.getElementById('useClassBtn').addEventListener('click', async () => {
+  const sel = document.getElementById('classSelect');
+  const errEl = document.getElementById('classErr');
+  errEl.textContent = '';
+  try {
+    if (sel.value) {
+      classId = sel.value;
+    } else {
+      const name = document.getElementById('newClassName').value.trim();
+      if (!name) { errEl.textContent = '請輸入班級名稱'; return; }
+      const ref = doc(collection(db, 'classes'));
+      await setDoc(ref, { name, teacherId: uid, createdAt: serverTimestamp() });
+      classId = ref.id;
+    }
+    document.getElementById('rosterCard').classList.remove('hidden');
+    document.getElementById('roomCard').classList.remove('hidden');
+    const rSnap = await getDocs(collection(db, 'classes', classId, 'students'));
+    document.getElementById('rosterCount').textContent = '目前已有 ' + rSnap.size + ' 位學生';
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
+
+document.getElementById('saveRosterBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('rosterErr');
+  errEl.textContent = '';
+  const lines = document.getElementById('rosterInput').value.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) { errEl.textContent = '請至少輸入一位學生'; return; }
+  try {
+    const batch = writeBatch(db);
+    lines.forEach(line => {
+      const parts = line.split(/[,，\s]+/).filter(Boolean);
+      if (parts.length < 2) return;
+      const [name, studentNo] = parts;
+      batch.set(doc(db, 'classes', classId, 'students', studentNo), { name, studentNo });
+    });
+    await batch.commit();
+    const rSnap = await getDocs(collection(db, 'classes', classId, 'students'));
+    document.getElementById('rosterCount').textContent = '目前已有 ' + rSnap.size + ' 位學生';
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
+
+function randomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+document.getElementById('createRoomBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('roomErr');
+  errEl.textContent = '';
+  const question = document.getElementById('questionInput').value.trim();
+  const catLabels = document.getElementById('categoriesInput').value.split(',').map(s => s.trim()).filter(Boolean);
+  const maxNotes = parseInt(document.getElementById('maxNotesInput').value || '0', 10);
+  if (!question) { errEl.textContent = '請輸入議題／問題'; return; }
+  try {
+    const code = randomCode();
+    await setDoc(doc(db, 'rooms', code), {
+      classId, question, maxNotesPerStudent: maxNotes, active: true, createdAt: serverTimestamp()
+    });
+    const batch = writeBatch(db);
+    catLabels.forEach((label, i) => {
+      batch.set(doc(db, 'rooms', code, 'categories', 'cat' + i), { label, order: i });
+    });
+    await batch.commit();
+    roomId = code;
+    openActiveRoom();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
+
+function openActiveRoom() {
+  document.getElementById('activeRoomCard').classList.remove('hidden');
+  document.getElementById('attendanceCard').classList.remove('hidden');
+  document.getElementById('moderationCard').classList.remove('hidden');
+  document.getElementById('activeQuestion').textContent = document.getElementById('questionInput').value.trim();
+  const url = location.origin + location.pathname.replace('teacher.html', 'index.html') + '?r=' + roomId;
+  document.getElementById('roomLink').textContent = '房間代碼：' + roomId + '　連結：' + url;
+  document.getElementById('qrBox').innerHTML = '';
+  new QRCode(document.getElementById('qrBox'), { text: url, width: 140, height: 140 });
+
+  onSnapshot(collection(db, 'rooms', roomId, 'joined'), snap => {
+    document.getElementById('joinedCount').textContent = snap.size;
+    const list = document.getElementById('joinedList');
+    list.innerHTML = '';
+    snap.forEach(d => {
+      const s = d.data();
+      const row = document.createElement('div');
+      row.innerHTML = '<span>' + s.name + ' #' + s.studentNo + '</span><span>' + (s.noteCount || 0) + ' 則</span>';
+      list.appendChild(row);
+    });
+  });
+
+  onSnapshot(collection(db, 'rooms', roomId, 'notes'), snap => {
+    const list = document.getElementById('notesList');
+    list.innerHTML = '';
+    snap.forEach(d => {
+      const n = d.data();
+      const row = document.createElement('div');
+      row.className = 'note-row';
+      const span = document.createElement('span');
+      span.textContent = n.name + ' #' + n.studentNo + '：' + n.text;
+      const btn = document.createElement('button');
+      btn.className = 'del'; btn.textContent = '刪除';
+      btn.addEventListener('click', () => deleteDoc(doc(db, 'rooms', roomId, 'notes', d.id)));
+      row.appendChild(span); row.appendChild(btn);
+      list.appendChild(row);
+    });
+  });
+}
+</script>
+</body>
+</html>

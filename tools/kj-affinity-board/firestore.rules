@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isTeacherOf(classId) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/classes/$(classId)) &&
+        get(/databases/$(database)/documents/classes/$(classId)).data.teacherId == request.auth.uid;
+    }
+
+    function roomClassId(roomId) {
+      return get(/databases/$(database)/documents/rooms/$(roomId)).data.classId;
+    }
+
+    // 班級（長期，老師 Google 登入後管理）
+    match /classes/{classId} {
+      allow read: if true; // 學生加入時要讀花名冊
+      allow create: if request.auth != null && request.resource.data.teacherId == request.auth.uid;
+      allow update, delete: if isTeacherOf(classId);
+
+      match /students/{studentId} {
+        allow read: if true;
+        allow write: if isTeacherOf(classId);
+      }
+    }
+
+    // 每次開課的房間（對應一個問題）
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow create: if isTeacherOf(request.resource.data.classId);
+      allow update: if isTeacherOf(resource.data.classId);
+      allow delete: if false;
+
+      // 分類欄位（交通/綠地/安全…），老師建房時設定
+      match /categories/{catId} {
+        allow read: if true;
+        allow write: if isTeacherOf(roomClassId(roomId));
+      }
+
+      // 出席／已加入名單，兼做「選名字」的輕量防護鎖
+      match /joined/{studentId} {
+        allow read: if true;
+        allow create: if !exists(/databases/$(database)/documents/rooms/$(roomId)/joined/$(studentId)) &&
+          request.resource.data.keys().hasAll(['name', 'studentNo', 'deviceToken', 'joinedAt', 'noteCount']) &&
+          request.resource.data.noteCount == 0;
+        // 只有同一台裝置（deviceToken 對得上）能繼續更新自己的 noteCount；老師可管理名單
+        allow update: if isTeacherOf(roomClassId(roomId)) ||
+          (request.resource.data.deviceToken == resource.data.deviceToken &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['noteCount']) &&
+           request.resource.data.noteCount == resource.data.noteCount + 1);
+        allow delete: if isTeacherOf(roomClassId(roomId));
+      }
+
+      // 便利貼
+      match /notes/{noteId} {
+        allow read: if true;
+        allow create: if request.resource.data.text is string &&
+          request.resource.data.text.size() > 0 &&
+          request.resource.data.text.size() <= 40 &&
+          exists(/databases/$(database)/documents/rooms/$(roomId)/joined/$(request.resource.data.studentId)) &&
+          get(/databases/$(database)/documents/rooms/$(roomId)/joined/$(request.resource.data.studentId)).data.deviceToken == request.resource.data.deviceToken &&
+          (get(/databases/$(database)/documents/rooms/$(roomId)).data.maxNotesPerStudent == 0 ||
+           get(/databases/$(database)/documents/rooms/$(roomId)/joined/$(request.resource.data.studentId)).data.noteCount <
+             get(/databases/$(database)/documents/rooms/$(roomId)).data.maxNotesPerStudent);
+        // 分類拖曳：任何人可以只改 categoryId（KJ 法共同歸納精神）；老師可整體管理/刪除
+        allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['categoryId']) ||
+          isTeacherOf(roomClassId(roomId));
+        allow delete: if isTeacherOf(roomClassId(roomId));
+      }
+    }
+  }
+}
