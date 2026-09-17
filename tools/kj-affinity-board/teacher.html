@@ -126,8 +126,11 @@ button, input, select, textarea { font-family: inherit; }
   </div>
 
   <div class="card hidden" id="activeRoomCard">
-    <h2>這個議題 <span class="badge" id="activeBadge">進行中</span></h2>
-    <p style="font-weight:700;margin-bottom:10px;" id="activeQuestion"></p>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="margin-bottom:0;">這個議題 <span class="badge" id="activeBadge">進行中</span></h2>
+      <button class="btn secondary" id="collapseTopicBtn" style="padding:6px 12px;font-size:.82rem;">收合</button>
+    </div>
+    <p style="font-weight:700;margin:10px 0;" id="activeQuestion"></p>
     <div class="row" style="align-items:center;">
       <div>
         <div id="roomLink"></div>
@@ -553,6 +556,13 @@ async function tTryMoveSelected(categoryId) {
   document.querySelectorAll('#moderationCard .note.selected').forEach(x => x.classList.remove('selected'));
   await updateDoc(doc(db, 'rooms', roomId, 'notes', id), { categoryId: categoryId, groupId: null });
 }
+
+document.getElementById('collapseTopicBtn').addEventListener('click', () => {
+  document.getElementById('activeRoomCard').classList.add('hidden');
+  document.getElementById('attendanceCard').classList.add('hidden');
+  document.getElementById('moderationCard').classList.add('hidden');
+  document.getElementById('topicListCard').scrollIntoView({ behavior: 'smooth' });
+});
 
 document.getElementById('addCatBtn').addEventListener('click', async () => {
   const input = document.getElementById('newCatInput');
