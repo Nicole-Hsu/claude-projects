@@ -482,9 +482,28 @@ function openActiveRoom(question, currentMaxNotes) {
         const row = document.createElement('div');
         row.style.cursor = 'pointer';
         if (r.id === tHighlightId) row.style.background = 'var(--bg-accent, #f3ead9)';
-        const status = !r.joined ? '尚未加入' : (r.noteCount === 0 ? '已加入，0 則' : r.noteCount + ' 則');
-        row.innerHTML = '<span>' + r.name + ' #' + r.studentNo + '</span><span>' + status + '</span>';
         if (r.noteCount === 0) row.style.color = 'var(--danger)';
+        const status = !r.joined ? '尚未加入' : (r.noteCount === 0 ? '已加入，0 則' : r.noteCount + ' 則');
+        const left = document.createElement('span');
+        left.textContent = r.name + ' #' + r.studentNo;
+        const right = document.createElement('span');
+        right.style.cssText = 'display:flex;align-items:center;gap:8px;';
+        const statusSpan = document.createElement('span');
+        statusSpan.textContent = status;
+        right.appendChild(statusSpan);
+        if (r.joined) {
+          const releaseBtn = document.createElement('button');
+          releaseBtn.textContent = '解除';
+          releaseBtn.title = '如果學生點錯學號，用這個把這個學號解鎖，讓對的學生重新選';
+          releaseBtn.style.cssText = 'border:1px solid var(--border);background:#fff;color:var(--text-mid);font-size:.72rem;padding:3px 8px;border-radius:999px;cursor:pointer;';
+          releaseBtn.addEventListener('click', async ev => {
+            ev.stopPropagation();
+            if (!confirm(r.name + ' #' + r.studentNo + ' 目前選的名字要解除嗎？解除後這個學號可以被重新選一次。')) return;
+            await deleteDoc(doc(db, 'rooms', roomId, 'joined', r.id));
+          });
+          right.appendChild(releaseBtn);
+        }
+        row.appendChild(left); row.appendChild(right);
         row.addEventListener('click', () => {
           tHighlightId = (tHighlightId === r.id) ? null : r.id;
           renderTeacherBoard();
