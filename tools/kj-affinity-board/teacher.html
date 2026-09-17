@@ -657,6 +657,9 @@ function tNoteEl(n, idx) {
         }
         if (newSnap.exists()) {
           tx.update(newJoinedRef, { noteCount: (newSnap.data().noteCount || 0) + 1 });
+        } else {
+          // 這個座號還沒加入過房間，先幫他補建一筆，則數從 1 開始（之後他真的加入時會沿用這個數字，不會被重置成 0）
+          tx.set(newJoinedRef, { seatNo: newSeatTrim, deviceToken: '', joinedAt: serverTimestamp(), noteCount: 1 });
         }
       });
     } catch (e) {

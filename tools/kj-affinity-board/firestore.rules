@@ -38,8 +38,9 @@ service cloud.firestore {
 
       match /joined/{studentId} {
         allow read: if true;
-        allow create: if request.resource.data.keys().hasAll(['seatNo', 'deviceToken', 'joinedAt', 'noteCount']) &&
-          request.resource.data.noteCount == 0;
+        allow create: if isTeacherOf(roomClassId(roomId)) ||
+          (request.resource.data.keys().hasAll(['seatNo', 'deviceToken', 'joinedAt', 'noteCount']) &&
+           request.resource.data.noteCount == 0);
         allow update: if isTeacherOf(roomClassId(roomId)) ||
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seatNo', 'deviceToken', 'joinedAt']) ||
           (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['noteCount']) &&
