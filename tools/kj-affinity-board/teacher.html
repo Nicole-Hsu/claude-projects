@@ -275,6 +275,8 @@ async function loadTopicList() {
         data.createdAt.toDate().toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
       row.innerHTML = '<div><div class="topic-q"></div><div class="topic-meta">' + dateStr + '　代碼 ' + d.id + '</div></div>';
       row.querySelector('.topic-q').textContent = data.question;
+      const btnGroup = document.createElement('div');
+      btnGroup.style.cssText = 'display:flex;gap:6px;';
       const btn = document.createElement('button');
       btn.className = 'btn secondary';
       btn.textContent = '查看';
@@ -283,11 +285,43 @@ async function loadTopicList() {
         openActiveRoom(data.question, data.maxNotesPerStudent || 0);
         document.getElementById('activeRoomCard').scrollIntoView({ behavior: 'smooth' });
       });
-      row.appendChild(btn);
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn secondary';
+      delBtn.style.color = 'var(--danger)';
+      delBtn.textContent = '刪除';
+      delBtn.addEventListener('click', () => deleteRoom(d.id, data.question));
+      btnGroup.appendChild(btn); btnGroup.appendChild(delBtn);
+      row.appendChild(btnGroup);
       listEl.appendChild(row);
     });
   } catch (e) {
     listEl.innerHTML = '<p style="color:var(--danger);font-size:.85rem;">' + e.message + '</p>';
+  }
+}
+
+async function deleteRoom(id, question) {
+  if (!confirm('確定要刪除這個議題嗎？「' + question + '」\n裡面所有便利貼、分類、參與紀錄都會一起刪掉，不能復原。')) return;
+  try {
+    const subcols = ['categories', 'joined', 'notes'];
+    for (const sub of subcols) {
+      const snap = await getDocs(collection(db, 'rooms', id, sub));
+      const docs = snap.docs;
+      for (let i = 0; i < docs.length; i += 450) {
+        const batch = writeBatch(db);
+        docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+    }
+    await deleteDoc(doc(db, 'rooms', id));
+    if (roomId === id) {
+      document.getElementById('activeRoomCard').classList.add('hidden');
+      document.getElementById('attendanceCard').classList.add('hidden');
+      document.getElementById('moderationCard').classList.add('hidden');
+      roomId = null;
+    }
+    loadTopicList();
+  } catch (e) {
+    alert('刪除失敗：' + e.message);
   }
 }
 
