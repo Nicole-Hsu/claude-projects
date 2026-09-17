@@ -52,6 +52,10 @@ button, input, select, textarea { font-family: inherit; }
 .note .n-text { font-size: .82rem; line-height: 1.35; word-break: break-word; }
 .note .n-del { border: none; background: none; color: inherit; opacity: .6; cursor: pointer; font-size: .78rem; padding: 0 2px; }
 @keyframes pop { 0% { transform: scale(.7); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+.cluster { border: 1.5px dashed var(--text-dim); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,.4); }
+.cluster .cluster-notes { display: flex; flex-wrap: wrap; gap: 8px; }
+.cluster .cluster-notes .note { width: 128px; }
+.name-cat-btn { align-self: flex-start; border: none; background: var(--accent); color: #fff; font-size: .72rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; cursor: pointer; }
 .c0 { background: #fde7c5; } .c0 .n-name { color: #8a5a10; } .c0 .n-text { color: #5c3c08; }
 .c1 { background: #cdeee0; } .c1 .n-name { color: #146850; } .c1 .n-text { color: #0c4636; }
 .c2 { background: #f6cfe0; } .c2 .n-name { color: #9c2f5e; } .c2 .n-text { color: #6e2142; }
@@ -368,10 +372,17 @@ function tNoteEl(n, idx) {
   el.className = 'note ' + T_COLORS[idx % T_COLORS.length];
   el.addEventListener('click', ev => {
     ev.stopPropagation();
-    document.querySelectorAll('#moderationCard .note.selected').forEach(x => x.classList.remove('selected'));
-    if (tSelectedNoteId === n.id) { tSelectedNoteId = null; return; }
-    tSelectedNoteId = n.id;
-    el.classList.add('selected');
+    if (!tSelectedNoteId) {
+      tSelectedNoteId = n.id;
+      el.classList.add('selected');
+      return;
+    }
+    if (tSelectedNoteId === n.id) {
+      tSelectedNoteId = null;
+      el.classList.remove('selected');
+      return;
+    }
+    tGroupWithSelected(n.id);
   });
   const nameRow = document.createElement('div');
   nameRow.className = 'n-name';
@@ -409,16 +420,64 @@ function renderTeacherBoard() {
     col.addEventListener('click', () => tTryMoveSelected(c.id));
     colsWrap.appendChild(col);
   });
-  tNotes.forEach((n, idx) => {
-    const el = tNoteEl(n, idx);
-    if (n.categoryId) {
-      const target = colsWrap.querySelector('.col:nth-child(' + (tCategories.findIndex(c => c.id === n.categoryId) + 1) + ') .col-notes');
-      if (target) target.appendChild(el); else pool.appendChild(el);
-    } else {
-      pool.appendChild(el);
-    }
+
+  const poolNotes = tNotes.filter(n => !n.categoryId);
+  const clusters = {};
+  const singles = [];
+  poolNotes.forEach(n => {
+    if (n.groupId) { (clusters[n.groupId] = clusters[n.groupId] || []).push(n); }
+    else { singles.push(n); }
   });
+
+  Object.entries(clusters).forEach(([gid, notes]) => {
+    const box = document.createElement('div');
+    box.className = 'cluster';
+    const notesWrap = document.createElement('div');
+    notesWrap.className = 'cluster-notes';
+    notes.forEach((n, idx) => notesWrap.appendChild(tNoteEl(n, idx)));
+    const nameBtn = document.createElement('button');
+    nameBtn.className = 'name-cat-btn';
+    nameBtn.textContent = '幫這群命名成分類';
+    nameBtn.addEventListener('click', ev => { ev.stopPropagation(); tNameCluster(gid, notes); });
+    box.appendChild(notesWrap);
+    box.appendChild(nameBtn);
+    pool.appendChild(box);
+  });
+
+  singles.forEach((n, idx) => pool.appendChild(tNoteEl(n, idx)));
+
+  tNotes.filter(n => n.categoryId).forEach((n, idx) => {
+    const target = colsWrap.querySelector('.col:nth-child(' + (tCategories.findIndex(c => c.id === n.categoryId) + 1) + ') .col-notes');
+    if (target) target.appendChild(tNoteEl(n, idx));
+  });
+
   pool.onclick = () => tTryMoveSelected(null);
+}
+
+async function tGroupWithSelected(targetId) {
+  const aId = tSelectedNoteId;
+  tSelectedNoteId = null;
+  document.querySelectorAll('#moderationCard .note.selected').forEach(x => x.classList.remove('selected'));
+  const a = tNotes.find(x => x.id === aId);
+  const b = tNotes.find(x => x.id === targetId);
+  if (!a || !b) return;
+  const gid = a.groupId || b.groupId || ('g' + Date.now());
+  const ids = new Set([aId, targetId]);
+  if (a.groupId) tNotes.filter(x => x.groupId === a.groupId).forEach(x => ids.add(x.id));
+  if (b.groupId) tNotes.filter(x => x.groupId === b.groupId).forEach(x => ids.add(x.id));
+  const batch = writeBatch(db);
+  ids.forEach(id => batch.update(doc(db, 'rooms', roomId, 'notes', id), { groupId: gid }));
+  await batch.commit();
+}
+
+async function tNameCluster(gid, notes) {
+  const label = prompt('這群便利貼要叫什麼分類名稱？');
+  if (!label || !label.trim()) return;
+  const catRef = doc(collection(db, 'rooms', roomId, 'categories'));
+  const batch = writeBatch(db);
+  batch.set(catRef, { label: label.trim(), order: tCategories.length });
+  notes.forEach(n => batch.update(doc(db, 'rooms', roomId, 'notes', n.id), { categoryId: catRef.id, groupId: null }));
+  await batch.commit();
 }
 
 async function tTryMoveSelected(categoryId) {
@@ -426,7 +485,7 @@ async function tTryMoveSelected(categoryId) {
   const id = tSelectedNoteId;
   tSelectedNoteId = null;
   document.querySelectorAll('#moderationCard .note.selected').forEach(x => x.classList.remove('selected'));
-  await updateDoc(doc(db, 'rooms', roomId, 'notes', id), { categoryId: categoryId });
+  await updateDoc(doc(db, 'rooms', roomId, 'notes', id), { categoryId: categoryId, groupId: null });
 }
 
 document.getElementById('addCatBtn').addEventListener('click', async () => {

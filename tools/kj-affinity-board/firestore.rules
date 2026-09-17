@@ -31,10 +31,13 @@ service cloud.firestore {
       allow update: if isTeacherOf(resource.data.classId);
       allow delete: if false;
 
-      // 分類欄位（交通/綠地/安全…），老師建房時設定
+      // 分類欄位：發散階段收斂出脈絡後才會出現，任何人都能命名新增
+      // （KJ 法精神——分類是從便利貼群組裡長出來的，不是老師預先訂的）
       match /categories/{catId} {
         allow read: if true;
-        allow write: if isTeacherOf(roomClassId(roomId));
+        allow create: if request.resource.data.keys().hasAll(['label', 'order']) &&
+          request.resource.data.label is string && request.resource.data.label.size() > 0;
+        allow update, delete: if isTeacherOf(roomClassId(roomId));
       }
 
       // 出席／已加入名單，兼做「選名字」的輕量防護鎖
@@ -62,8 +65,8 @@ service cloud.firestore {
           (get(/databases/$(database)/documents/rooms/$(roomId)).data.maxNotesPerStudent == 0 ||
            get(/databases/$(database)/documents/rooms/$(roomId)/joined/$(request.resource.data.studentId)).data.noteCount <
              get(/databases/$(database)/documents/rooms/$(roomId)).data.maxNotesPerStudent);
-        // 分類拖曳：任何人可以只改 categoryId（KJ 法共同歸納精神）；老師可整體管理/刪除
-        allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['categoryId']) ||
+        // 分類/分組拖曳：任何人可以只改 categoryId 和/或 groupId（KJ 法共同歸納精神）；老師可整體管理/刪除
+        allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['categoryId', 'groupId']) ||
           isTeacherOf(roomClassId(roomId));
         allow delete: if isTeacherOf(roomClassId(roomId));
       }
