@@ -91,9 +91,9 @@ button, input, select, textarea { font-family: inherit; }
   </div>
 
   <div class="card hidden" id="rosterCard">
-    <h2>班級名單（姓名＋學號，一行一位）</h2>
+    <h2>班級名單（學號＋姓名，一行一位）</h2>
     <div class="field">
-      <textarea id="rosterInput" placeholder="陳小安,12&#10;林小婷,05&#10;黃小宇,19"></textarea>
+      <textarea id="rosterInput" placeholder="12,陳小安&#10;05,林小婷&#10;19,黃小宇"></textarea>
     </div>
     <button class="btn" id="saveRosterBtn">儲存名單</button>
     <span id="rosterCount" style="margin-left:10px;font-size:.82rem;color:var(--text-mid);"></span>
@@ -204,6 +204,14 @@ document.getElementById('classSelect').addEventListener('change', e => {
   document.getElementById('newClassField').classList.toggle('hidden', !!e.target.value);
 });
 
+async function loadRosterIntoTextarea() {
+  const rSnap = await getDocs(collection(db, 'classes', classId, 'students'));
+  const students = rSnap.docs.map(d => d.data());
+  students.sort((a, b) => a.studentNo.localeCompare(b.studentNo, undefined, { numeric: true }));
+  document.getElementById('rosterInput').value = students.map(s => s.studentNo + ',' + s.name).join('\n');
+  document.getElementById('rosterCount').textContent = '目前已有 ' + students.length + ' 位學生';
+}
+
 document.getElementById('useClassBtn').addEventListener('click', async () => {
   const sel = document.getElementById('classSelect');
   const errEl = document.getElementById('classErr');
@@ -220,8 +228,7 @@ document.getElementById('useClassBtn').addEventListener('click', async () => {
     }
     document.getElementById('rosterCard').classList.remove('hidden');
     document.getElementById('roomCard').classList.remove('hidden');
-    const rSnap = await getDocs(collection(db, 'classes', classId, 'students'));
-    document.getElementById('rosterCount').textContent = '目前已有 ' + rSnap.size + ' 位學生';
+    await loadRosterIntoTextarea();
 
     try {
       const roomSnap = await getDocs(query(
@@ -252,12 +259,11 @@ document.getElementById('saveRosterBtn').addEventListener('click', async () => {
     lines.forEach(line => {
       const parts = line.split(/[,，\s]+/).filter(Boolean);
       if (parts.length < 2) return;
-      const [name, studentNo] = parts;
+      const [studentNo, name] = parts;
       batch.set(doc(db, 'classes', classId, 'students', studentNo), { name, studentNo });
     });
     await batch.commit();
-    const rSnap = await getDocs(collection(db, 'classes', classId, 'students'));
-    document.getElementById('rosterCount').textContent = '目前已有 ' + rSnap.size + ' 位學生';
+    await loadRosterIntoTextarea();
   } catch (e) {
     errEl.textContent = e.message;
   }
