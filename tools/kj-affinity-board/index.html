@@ -165,7 +165,6 @@ button, select, input, textarea { font-family: inherit; }
   </div>
 
   <div class="tap-hint" id="tapHint" style="display:none;">點一下便利貼選取，再點一下想歸類的欄位就會移過去</div>
-  <div class="tap-hint" id="noCatHint" style="display:none;">老師還在收集大家的想法，等一下開始分類時這裡會出現分類欄位</div>
   <div class="columns" id="columns"></div>
 </div>
 
@@ -334,7 +333,6 @@ function renderColumns() {
   const wrap = document.getElementById('columns');
   wrap.innerHTML = '';
   document.getElementById('tapHint').style.display = categories.length ? '' : 'none';
-  document.getElementById('noCatHint').style.display = categories.length ? 'none' : '';
   categories.forEach(c => {
     const col = document.createElement('div');
     col.className = 'col'; col.dataset.col = c.id;
