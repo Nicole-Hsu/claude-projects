@@ -96,13 +96,21 @@ button, input, select, textarea { font-family: inherit; }
   </div>
 
   <div class="card hidden" id="rosterCard">
-    <h2>班級名單（學號＋姓名，一行一位）</h2>
-    <div class="field">
-      <textarea id="rosterInput" placeholder="12,陳小安&#10;05,林小婷&#10;19,黃小宇"></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h2 style="margin-bottom:0;">班級名單</h2>
+      <div>
+        <span id="rosterCount" style="font-size:.85rem;color:var(--text-mid);"></span>
+        <button class="btn secondary" id="toggleRosterBtn" style="margin-left:10px;padding:7px 14px;font-size:.85rem;">展開名單</button>
+      </div>
     </div>
-    <button class="btn" id="saveRosterBtn">儲存名單</button>
-    <span id="rosterCount" style="margin-left:10px;font-size:.82rem;color:var(--text-mid);"></span>
-    <div class="err" id="rosterErr"></div>
+    <div id="rosterEditArea" class="hidden" style="margin-top:14px;">
+      <div class="field">
+        <label>學號＋姓名，一行一位</label>
+        <textarea id="rosterInput" placeholder="12,陳小安&#10;05,林小婷&#10;19,黃小宇"></textarea>
+      </div>
+      <button class="btn" id="saveRosterBtn">儲存名單</button>
+      <div class="err" id="rosterErr"></div>
+    </div>
   </div>
 
   <div class="card hidden" id="topicListCard">
@@ -227,7 +235,22 @@ async function loadRosterIntoTextarea() {
   students.sort((a, b) => a.studentNo.localeCompare(b.studentNo, undefined, { numeric: true }));
   document.getElementById('rosterInput').value = students.map(s => s.studentNo + ',' + s.name).join('\n');
   document.getElementById('rosterCount').textContent = '目前已有 ' + students.length + ' 位學生';
+  const editArea = document.getElementById('rosterEditArea');
+  const toggleBtn = document.getElementById('toggleRosterBtn');
+  if (students.length > 0) {
+    editArea.classList.add('hidden');
+    toggleBtn.textContent = '展開名單';
+  } else {
+    editArea.classList.remove('hidden');
+    toggleBtn.textContent = '收合名單';
+  }
 }
+
+document.getElementById('toggleRosterBtn').addEventListener('click', () => {
+  const editArea = document.getElementById('rosterEditArea');
+  const nowHidden = editArea.classList.toggle('hidden');
+  document.getElementById('toggleRosterBtn').textContent = nowHidden ? '展開名單' : '收合名單';
+});
 
 async function loadTopicList() {
   const listEl = document.getElementById('topicList');
