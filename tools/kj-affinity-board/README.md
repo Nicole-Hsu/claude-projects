@@ -2,33 +2,24 @@
 
 班級用的數位 KJ 法（親和圖）工具：老師發問，學生發便利貼，全班一起（或老師）拖曳歸類。規格討論過程見 repo 根目錄的 `PROGRESS.md`（2026-09-17 那次）。
 
-## 目前狀態：程式碼寫好了，還沒能真的連上 Firebase
+## 目前狀態：已接上 Firebase，還沒有真人走過一次完整流程
 
-`index.html`（學生端）和 `teacher.html`（老師端）都是完整可動作的程式碼，但 `firebaseConfig` 還是佔位的 `YOUR_API_KEY` / `YOUR_PROJECT_ID` —— **因為這個工具原本設定要用的 Firebase 專案 `my-teaching-tools` 在目前登入的帳號（nicolehsu2004@gmail.com）底下查不到，不存在。**
+- Firebase 專案：**`kj-affinity-board`**（新開的，帳號 nicolehsu2004@gmail.com 底下）
+- Firestore 安全規則、Google 登入 provider：已部署（`firebase deploy --only firestore,auth`）
+- `firebaseConfig` 已經填進 `index.html` / `teacher.html`，不是佔位值了
+- 已測試：`index.html` 查詢一個不存在的房間代碼，正確連到真的 Firestore 並回報「找不到」——代表資料庫串接沒問題
 
-目前這個帳號底下有的 Firebase 專案：
-- `signinsystem2026`（簽到系統在用）
-- `qmethod-classroom`
-- `codex2026-2180c`
+**還沒測過的部分（沒辦法在無頭瀏覽器環境完整驗證，需要你實際操作一次）：**
+1. `teacher.html` 的 Google 登入彈窗（OAuth 互動式登入，且要注意 GitHub Pages 網域要被列在 Firebase Console → Authentication → Settings → 授權網域）
+2. 完整跑一輪：老師登入→建班級→貼名單→開房間→拿到 QR→學生端掃碼加入→發便利貼→點選歸類
+3. 部署到 GitHub Pages 之後（`nicole-hsu.github.io/...`）用真手機掃 QR 測試
 
-**需要你決定：**
-1. 開一個新的 Firebase 專案給這個工具用（例如叫 `kj-affinity-board`），或
-2. 沿用 `qmethod-classroom`（如果那個專案本來就是留給教室工具用的？我不確定它的用途，需要你確認）
-
-決定之後，跑：
-```
-firebase apps:sdkconfig web
-```
-或用 Firebase Console → 專案設定 → 新增網頁應用程式，把拿到的設定貼到 `index.html` 和 `teacher.html` 裡的 `firebaseConfig`。
-
-## 部署 Firestore 安全規則
+## 部署 Firestore 安全規則（之後改規則要重新部署時用）
 
 ```
-firebase deploy --only firestore:rules --project <你的專案ID>
+firebase deploy --only firestore:rules --project kj-affinity-board
 ```
 （`firestore.rules` 已經寫好在這個資料夾裡，對應 PROGRESS.md 裡定案的規則邏輯。）
-
-還需要在 Firebase Console 開啟 **Google 登入**（Authentication → Sign-in method → Google），老師後台 (`teacher.html`) 才能登入。
 
 ## 已知限制（MVP 範圍內的取捨，之後可以再補）
 
