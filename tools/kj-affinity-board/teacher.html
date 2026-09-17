@@ -178,8 +178,11 @@ button, input, select, textarea { font-family: inherit; }
   </div>
 
   <div class="card hidden" id="moderationCard">
-    <h2>便利貼牆（跟學生看到的一樣，可投影給全班；點便利貼上的 ✕ 可刪除不當內容）</h2>
-    <div class="pool-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h2 style="margin-bottom:0;">便利貼牆（跟學生看到的一樣，可投影給全班；點便利貼上的 ✕ 可刪除不當內容）</h2>
+      <button class="btn secondary" id="exportCsvBtn" style="padding:7px 14px;font-size:.85rem;white-space:nowrap;">匯出成 CSV</button>
+    </div>
+    <div class="pool-box" style="margin-top:14px;">
       <div class="pool-title">尚未分類</div>
       <div class="notes-wrap" id="tPool"></div>
     </div>
@@ -698,6 +701,33 @@ document.getElementById('toggleAttendanceBtn').addEventListener('click', () => {
   const list = document.getElementById('joinedList');
   const nowHidden = list.classList.toggle('hidden');
   document.getElementById('toggleAttendanceBtn').textContent = nowHidden ? '展開名單' : '收合名單';
+});
+
+document.getElementById('exportCsvBtn').addEventListener('click', () => {
+  const catLabelById = {};
+  tCategories.forEach(c => { catLabelById[c.id] = c.label; });
+  const rows = [['座號', '便利貼內容', '分類', '發布時間']];
+  tNotes.forEach(n => {
+    const category = n.categoryId ? (catLabelById[n.categoryId] || '') : '尚未分類';
+    const timeStr = (n.createdAt && n.createdAt.toDate) ?
+      n.createdAt.toDate().toLocaleString('zh-TW') : '';
+    rows.push([n.seatNo + ' 號', n.text, category, timeStr]);
+  });
+  const csv = rows.map(row => row.map(cell => {
+    const s = String(cell == null ? '' : cell);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const question = document.getElementById('activeQuestion').textContent.trim();
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '便利貼_' + (question || roomId) + '_' + dateStr + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 });
 
 document.getElementById('collapseTopicBtn').addEventListener('click', () => {
