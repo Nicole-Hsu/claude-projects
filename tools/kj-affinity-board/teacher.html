@@ -82,16 +82,11 @@ button, input, select, textarea { font-family: inherit; }
       <label>本次議題／問題</label>
       <input id="questionInput" placeholder="例如：我們社區怎麼設計會更友善？">
     </div>
-    <div class="row">
-      <div class="field">
-        <label>分類欄位（逗號分隔）</label>
-        <input id="categoriesInput" placeholder="交通,綠地,安全" value="交通,綠地,安全">
-      </div>
-      <div class="field">
-        <label>每人最多發幾則（0＝不限）</label>
-        <input id="maxNotesInput" type="number" min="0" value="3">
-      </div>
+    <div class="field">
+      <label>每人最多發幾則（0＝不限）</label>
+      <input id="maxNotesInput" type="number" min="0" value="3" style="max-width:160px;">
     </div>
+    <p style="font-size:.8rem;color:var(--text-mid);margin-bottom:14px;">分類欄位不用現在設——等大家的便利貼收集得差不多了，再依實際內容新增分類（在下面「目前房間」那邊隨時可以加）。</p>
     <button class="btn" id="createRoomBtn">產生房間</button>
     <div class="err" id="roomErr"></div>
   </div>
@@ -243,7 +238,6 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('roomErr');
   errEl.textContent = '';
   const question = document.getElementById('questionInput').value.trim();
-  const catLabels = document.getElementById('categoriesInput').value.split(',').map(s => s.trim()).filter(Boolean);
   const maxNotes = parseInt(document.getElementById('maxNotesInput').value || '0', 10);
   if (!question) { errEl.textContent = '請輸入議題／問題'; return; }
   try {
@@ -256,11 +250,6 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
     await setDoc(doc(db, 'rooms', code), {
       classId, question, maxNotesPerStudent: maxNotes, active: true, createdAt: serverTimestamp()
     });
-    const batch = writeBatch(db);
-    catLabels.forEach((label, i) => {
-      batch.set(doc(db, 'rooms', code, 'categories', 'cat' + i), { label, order: i });
-    });
-    await batch.commit();
     roomId = code;
     openActiveRoom(question);
   } catch (e) {
@@ -284,8 +273,8 @@ function openActiveRoom(question) {
     list.innerHTML = '';
     if (!cats.length) {
       const hint = document.createElement('div');
-      hint.style.cssText = 'font-size:.82rem;color:var(--danger);';
-      hint.textContent = '目前沒有任何分類欄位，學生會沒地方可以歸類便利貼，請在下面新增';
+      hint.style.cssText = 'font-size:.82rem;color:var(--text-mid);';
+      hint.textContent = '還沒有分類欄位，這是正常的——先讓大家把便利貼發完，等內容夠了再依實際出現的主題新增分類';
       list.appendChild(hint);
     }
     cats.forEach(c => {
