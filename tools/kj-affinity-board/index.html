@@ -246,7 +246,7 @@ function renderNamePicker() {
     const s = d.data();
     const opt = document.createElement('option');
     opt.value = d.id;
-    opt.textContent = (s.seatNo || d.id) + ' 號' + (takenIds.has(d.id) ? '（已有人加入，請確認是否座號正確）' : '');
+    opt.textContent = (s.seatNo || d.id) + ' 號' + (takenIds.has(d.id) ? '（已有人加入｜若非本人使用，請通知老師）' : '');
     sel.appendChild(opt);
   });
   if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
