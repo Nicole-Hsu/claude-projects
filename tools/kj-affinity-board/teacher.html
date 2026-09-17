@@ -365,6 +365,14 @@ function openActiveRoom(question, currentMaxNotes) {
       chip.className = 'cat-chip';
       const label = document.createElement('span');
       label.textContent = c.label;
+      label.style.cursor = 'pointer';
+      label.title = '點一下改名稱';
+      label.addEventListener('click', () => {
+        const newLabel = prompt('改這個分類的名稱：', c.label);
+        if (newLabel && newLabel.trim() && newLabel.trim() !== c.label) {
+          updateDoc(doc(db, 'rooms', roomId, 'categories', c.id), { label: newLabel.trim() });
+        }
+      });
       const del = document.createElement('button');
       del.textContent = '✕';
       del.setAttribute('aria-label', '刪除分類 ' + c.label);
