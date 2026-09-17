@@ -246,7 +246,7 @@ function renderNamePicker() {
     const s = d.data();
     const opt = document.createElement('option');
     opt.value = d.id;
-    opt.textContent = s.seatNo + ' 號' + (takenIds.has(d.id) ? '（已有人加入，選了也沒關係）' : '');
+    opt.textContent = (s.seatNo || d.id) + ' 號' + (takenIds.has(d.id) ? '（已有人加入，選了也沒關係）' : '');
     sel.appendChild(opt);
   });
   if ([...sel.options].some(o => o.value === prev)) sel.value = prev;

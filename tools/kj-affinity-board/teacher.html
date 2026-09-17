@@ -238,7 +238,8 @@ document.getElementById('classSelect').addEventListener('change', e => {
 
 async function loadRosterIntoTextarea() {
   const rSnap = await getDocs(collection(db, 'classes', classId, 'students'));
-  const students = rSnap.docs.map(d => d.data());
+  // 用 doc id 當座號（相容改版前的舊資料，那時 doc id 存的是學號，欄位名稱不同但值可以照樣當座號用）
+  const students = rSnap.docs.map(d => ({ seatNo: d.data().seatNo || d.id }));
   students.sort((a, b) => a.seatNo.localeCompare(b.seatNo, undefined, { numeric: true }));
   document.getElementById('rosterInput').value = students.map(s => s.seatNo).join(', ');
   document.getElementById('rosterCount').textContent = '目前已有 ' + students.length + ' 個座號';
@@ -379,11 +380,15 @@ document.getElementById('saveRosterBtn').addEventListener('click', async () => {
   const seatNos = parseSeatNos(document.getElementById('rosterInput').value);
   if (!seatNos.length) { errEl.textContent = '請至少輸入一個座號，例如 1-45'; return; }
   try {
-    for (let i = 0; i < seatNos.length; i += 450) {
+    // 整批覆蓋：先刪掉不在新清單裡的舊座號（例如改版前的舊格式資料），再寫入新的
+    const existingSnap = await getDocs(collection(db, 'classes', classId, 'students'));
+    const wanted = new Set(seatNos);
+    const toDelete = existingSnap.docs.filter(d => !wanted.has(d.id));
+    const toWrite = seatNos;
+    const ops = [...toDelete.map(d => ({ type: 'delete', ref: d.ref })), ...toWrite.map(seatNo => ({ type: 'set', ref: doc(db, 'classes', classId, 'students', seatNo), data: { seatNo } }))];
+    for (let i = 0; i < ops.length; i += 450) {
       const batch = writeBatch(db);
-      seatNos.slice(i, i + 450).forEach(seatNo => {
-        batch.set(doc(db, 'classes', classId, 'students', seatNo), { seatNo });
-      });
+      ops.slice(i, i + 450).forEach(op => op.type === 'delete' ? batch.delete(op.ref) : batch.set(op.ref, op.data));
       await batch.commit();
     }
     await loadRosterIntoTextarea();
@@ -494,7 +499,7 @@ function openActiveRoom(question, currentMaxNotes, createdAt) {
 
       const rows = roster.map(s => {
         const j = joinedMap[s.id];
-        return { id: s.id, seatNo: s.seatNo, joined: !!j, noteCount: j ? (j.noteCount || 0) : 0 };
+        return { id: s.id, seatNo: s.seatNo || s.id, joined: !!j, noteCount: j ? (j.noteCount || 0) : 0 };
       });
       rows.sort((a, b) => a.noteCount - b.noteCount || a.seatNo.localeCompare(b.seatNo, undefined, { numeric: true }));
       document.getElementById('silentCount').textContent = rows.filter(r => r.noteCount === 0).length;
