@@ -178,7 +178,10 @@ button, input, select, textarea { font-family: inherit; }
   <div class="card hidden" id="attendanceCard">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
       <h2 style="margin-bottom:0;">參與狀況（<span id="joinedCount">0</span> / <span id="rosterTotal">0</span> 人已加入，<span id="silentCount">0</span> 人還沒發便利貼）</h2>
-      <button class="btn secondary" id="toggleAttendanceBtn" style="padding:7px 14px;font-size:.85rem;">展開名單</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn secondary" id="recalcBtn" style="padding:7px 14px;font-size:.85rem;">重新計算</button>
+        <button class="btn secondary" id="toggleAttendanceBtn" style="padding:7px 14px;font-size:.85rem;">展開名單</button>
+      </div>
     </div>
     <div class="joined-list hidden" id="joinedList" style="margin-top:12px;"></div>
   </div>
@@ -783,6 +786,47 @@ async function tTryMoveSelected(categoryId) {
   document.querySelectorAll('#moderationCard .note.selected').forEach(x => x.classList.remove('selected'));
   await updateDoc(doc(db, 'rooms', roomId, 'notes', id), { categoryId: categoryId, groupId: null });
 }
+
+document.getElementById('recalcBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('recalcBtn');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = '計算中…';
+  try {
+    const notesSnap = await getDocs(collection(db, 'rooms', roomId, 'notes'));
+    const counts = {};
+    notesSnap.docs.forEach(d => {
+      const seatNo = d.data().seatNo;
+      if (!seatNo) return;
+      counts[seatNo] = (counts[seatNo] || 0) + 1;
+    });
+    const joinedSnap = await getDocs(collection(db, 'rooms', roomId, 'joined'));
+    const joinedMap = {};
+    joinedSnap.docs.forEach(d => { joinedMap[d.id] = d.data(); });
+    const allSeats = new Set([...Object.keys(counts), ...Object.keys(joinedMap)]);
+    const batch = writeBatch(db);
+    let changed = 0;
+    allSeats.forEach(seatNo => {
+      const actual = counts[seatNo] || 0;
+      const ref = doc(db, 'rooms', roomId, 'joined', seatNo);
+      if (joinedMap[seatNo]) {
+        if ((joinedMap[seatNo].noteCount || 0) !== actual) {
+          batch.update(ref, { noteCount: actual });
+          changed++;
+        }
+      } else if (actual > 0) {
+        batch.set(ref, { seatNo, deviceToken: '', joinedAt: serverTimestamp(), noteCount: actual });
+        changed++;
+      }
+    });
+    if (changed > 0) await batch.commit();
+    alert(changed > 0 ? '重新計算完成，修正了 ' + changed + ' 個座號的資料' : '檢查過了，資料本來就是對的');
+  } catch (e) {
+    alert('重新計算失敗：' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = original;
+});
 
 document.getElementById('toggleAttendanceBtn').addEventListener('click', () => {
   const list = document.getElementById('joinedList');
