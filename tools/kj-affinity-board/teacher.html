@@ -101,6 +101,14 @@ button, input, select, textarea { font-family: inherit; }
       </div>
     </div>
     <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+      <div style="font-size:.82rem;font-weight:600;color:var(--text-mid);margin-bottom:8px;">每人最多發幾則（0＝不限）</div>
+      <div class="row" style="align-items:center;">
+        <input id="editMaxNotesInput" type="number" min="0" style="flex:1;max-width:100px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:.95rem;background:#fafafa;">
+        <button class="btn secondary" id="saveMaxNotesBtn" style="flex:1;">更新（馬上生效）</button>
+      </div>
+      <div class="err" id="maxNotesErr"></div>
+    </div>
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
       <div style="font-size:.82rem;font-weight:600;color:var(--text-mid);margin-bottom:8px;">分類欄位</div>
       <div id="catList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
       <div class="row">
@@ -129,7 +137,7 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js';
 import {
-  getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, orderBy, limit,
+  getFirestore, doc, setDoc, updateDoc, getDoc, getDocs, collection, query, where, orderBy, limit,
   writeBatch, onSnapshot, deleteDoc, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
 
@@ -195,7 +203,7 @@ document.getElementById('useClassBtn').addEventListener('click', async () => {
       if (!roomSnap.empty) {
         const d = roomSnap.docs[0];
         roomId = d.id;
-        openActiveRoom(d.data().question);
+        openActiveRoom(d.data().question, d.data().maxNotesPerStudent || 0);
       }
     } catch (e) {
       // 找「上次房間」失敗（例如索引還沒建好）不擋班級選擇流程，安靜跳過即可
@@ -251,17 +259,18 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
       classId, question, maxNotesPerStudent: maxNotes, active: true, createdAt: serverTimestamp()
     });
     roomId = code;
-    openActiveRoom(question);
+    openActiveRoom(question, maxNotes);
   } catch (e) {
     errEl.textContent = e.message;
   }
 });
 
-function openActiveRoom(question) {
+function openActiveRoom(question, currentMaxNotes) {
   document.getElementById('activeRoomCard').classList.remove('hidden');
   document.getElementById('attendanceCard').classList.remove('hidden');
   document.getElementById('moderationCard').classList.remove('hidden');
   document.getElementById('activeQuestion').textContent = question;
+  document.getElementById('editMaxNotesInput').value = currentMaxNotes;
   const url = location.origin + location.pathname.replace('teacher.html', 'index.html') + '?r=' + roomId;
   document.getElementById('roomLink').textContent = '房間代碼：' + roomId + '　連結：' + url;
   document.getElementById('qrBox').innerHTML = '';
@@ -348,6 +357,20 @@ document.getElementById('addCatBtn').addEventListener('click', async () => {
     const nextOrder = existing.size;
     await setDoc(doc(db, 'rooms', roomId, 'categories', 'cat' + Date.now()), { label, order: nextOrder });
     input.value = '';
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
+
+document.getElementById('saveMaxNotesBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('maxNotesErr');
+  errEl.textContent = '';
+  const val = parseInt(document.getElementById('editMaxNotesInput').value || '0', 10);
+  try {
+    await updateDoc(doc(db, 'rooms', roomId), { maxNotesPerStudent: val });
+    errEl.style.color = 'var(--ok)';
+    errEl.textContent = '已更新，學生那邊馬上生效';
+    setTimeout(() => { errEl.textContent = ''; errEl.style.color = 'var(--danger)'; }, 3000);
   } catch (e) {
     errEl.textContent = e.message;
   }

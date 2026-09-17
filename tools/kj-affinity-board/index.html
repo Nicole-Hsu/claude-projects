@@ -286,6 +286,10 @@ function enterBoard() {
   show('screen-board');
   listenCategories();
   listenNotes();
+  onSnapshot(doc(db, 'rooms', roomId), snap => {
+    if (!snap.exists()) return;
+    maxNotes = snap.data().maxNotesPerStudent || 0;
+  });
 }
 
 let categories = [];
