@@ -64,6 +64,10 @@ button, input, select, textarea { font-family: inherit; }
 .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .74rem; background: var(--ok); color: #fff; }
 .cat-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px 5px 12px; border-radius: 999px; background: #f3ead9; font-size: .82rem; }
 .cat-chip button { border: none; background: none; color: var(--text-dim); cursor: pointer; font-size: .9rem; line-height: 1; padding: 2px; }
+.topic-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.topic-row .topic-q { font-weight: 600; }
+.topic-row .topic-meta { font-size: .76rem; color: var(--text-dim); margin-top: 2px; }
+.topic-row .btn { padding: 7px 14px; font-size: .82rem; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -100,8 +104,14 @@ button, input, select, textarea { font-family: inherit; }
     <div class="err" id="rosterErr"></div>
   </div>
 
+  <div class="card hidden" id="topicListCard">
+    <h2>議題</h2>
+    <div id="topicList" style="font-size:.9rem;"></div>
+    <button class="btn secondary" id="newTopicToggleBtn" style="margin-top:12px;">＋ 開新議題</button>
+  </div>
+
   <div class="card hidden" id="roomCard">
-    <h2>開一個新房間</h2>
+    <h2>開新議題</h2>
     <div class="field">
       <label>本次議題／問題</label>
       <input id="questionInput" placeholder="例如：我們社區怎麼設計會更友善？">
@@ -110,13 +120,13 @@ button, input, select, textarea { font-family: inherit; }
       <label>每人最多發幾則（0＝不限）</label>
       <input id="maxNotesInput" type="number" min="0" value="3" style="max-width:160px;">
     </div>
-    <p style="font-size:.8rem;color:var(--text-mid);margin-bottom:14px;">分類欄位不用現在設——等大家的便利貼收集得差不多了，再依實際內容新增分類（在下面「目前房間」那邊隨時可以加）。</p>
-    <button class="btn" id="createRoomBtn">產生房間</button>
+    <p style="font-size:.8rem;color:var(--text-mid);margin-bottom:14px;">分類欄位不用現在設——等大家的便利貼收集得差不多了，再依實際內容新增分類（在下面「這個議題」那邊隨時可以加）。</p>
+    <button class="btn" id="createRoomBtn">開始這個議題</button>
     <div class="err" id="roomErr"></div>
   </div>
 
   <div class="card hidden" id="activeRoomCard">
-    <h2>目前房間 <span class="badge" id="activeBadge">進行中</span></h2>
+    <h2>這個議題 <span class="badge" id="activeBadge">進行中</span></h2>
     <p style="font-weight:700;margin-bottom:10px;" id="activeQuestion"></p>
     <div class="row" style="align-items:center;">
       <div>
@@ -212,6 +222,47 @@ async function loadRosterIntoTextarea() {
   document.getElementById('rosterCount').textContent = '目前已有 ' + students.length + ' 位學生';
 }
 
+async function loadTopicList() {
+  const listEl = document.getElementById('topicList');
+  listEl.innerHTML = '正在讀取…';
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'rooms'), where('classId', '==', classId), where('active', '==', true),
+      orderBy('createdAt', 'desc'), limit(20)
+    ));
+    listEl.innerHTML = '';
+    if (snap.empty) {
+      listEl.innerHTML = '<p style="color:var(--text-mid);font-size:.85rem;">這個班級還沒開過議題，按下面「開新議題」開始第一個。</p>';
+      return;
+    }
+    snap.forEach(d => {
+      const data = d.data();
+      const row = document.createElement('div');
+      row.className = 'topic-row';
+      const dateStr = data.createdAt && data.createdAt.toDate ?
+        data.createdAt.toDate().toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      row.innerHTML = '<div><div class="topic-q"></div><div class="topic-meta">' + dateStr + '　代碼 ' + d.id + '</div></div>';
+      row.querySelector('.topic-q').textContent = data.question;
+      const btn = document.createElement('button');
+      btn.className = 'btn secondary';
+      btn.textContent = '查看';
+      btn.addEventListener('click', () => {
+        roomId = d.id;
+        openActiveRoom(data.question, data.maxNotesPerStudent || 0);
+        document.getElementById('activeRoomCard').scrollIntoView({ behavior: 'smooth' });
+      });
+      row.appendChild(btn);
+      listEl.appendChild(row);
+    });
+  } catch (e) {
+    listEl.innerHTML = '<p style="color:var(--danger);font-size:.85rem;">' + e.message + '</p>';
+  }
+}
+
+document.getElementById('newTopicToggleBtn').addEventListener('click', () => {
+  document.getElementById('roomCard').classList.toggle('hidden');
+});
+
 document.getElementById('useClassBtn').addEventListener('click', async () => {
   const sel = document.getElementById('classSelect');
   const errEl = document.getElementById('classErr');
@@ -227,23 +278,9 @@ document.getElementById('useClassBtn').addEventListener('click', async () => {
       classId = ref.id;
     }
     document.getElementById('rosterCard').classList.remove('hidden');
-    document.getElementById('roomCard').classList.remove('hidden');
+    document.getElementById('topicListCard').classList.remove('hidden');
     await loadRosterIntoTextarea();
-
-    try {
-      const roomSnap = await getDocs(query(
-        collection(db, 'rooms'), where('classId', '==', classId), where('active', '==', true),
-        orderBy('createdAt', 'desc'), limit(1)
-      ));
-      if (!roomSnap.empty) {
-        const d = roomSnap.docs[0];
-        roomId = d.id;
-        openActiveRoom(d.data().question, d.data().maxNotesPerStudent || 0);
-      }
-    } catch (e) {
-      // 找「上次房間」失敗（例如索引還沒建好）不擋班級選擇流程，安靜跳過即可
-      console.warn('讀取上次房間失敗，可能索引還在建立中：', e.message);
-    }
+    await loadTopicList();
   } catch (e) {
     errEl.textContent = e.message;
   }
@@ -293,7 +330,10 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
       classId, question, maxNotesPerStudent: maxNotes, active: true, createdAt: serverTimestamp()
     });
     roomId = code;
+    document.getElementById('questionInput').value = '';
+    document.getElementById('roomCard').classList.add('hidden');
     openActiveRoom(question, maxNotes);
+    loadTopicList();
   } catch (e) {
     errEl.textContent = e.message;
   }
