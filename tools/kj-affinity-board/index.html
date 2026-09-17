@@ -163,12 +163,11 @@ import {
   runTransaction, updateDoc, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
 
-// TODO: 換成實際的 Firebase 專案設定（目前還沒有對應的 Firebase 專案，見 README.md）
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+  apiKey: "AIzaSyDHv5IDqhZfBNAnOECLTx-Wk9khRdLjDTM",
+  authDomain: "kj-affinity-board.firebaseapp.com",
+  projectId: "kj-affinity-board",
+  storageBucket: "kj-affinity-board.firebasestorage.app",
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
