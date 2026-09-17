@@ -74,7 +74,10 @@ button, input, select, textarea { font-family: inherit; }
 </style>
 </head>
 <body>
-<div id="header"><h1>課堂便利貼工具 — 老師後台</h1></div>
+<div id="header" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+  <h1>課堂便利貼工具 — 老師後台</h1>
+  <button id="backToClassBtn" class="hidden" style="border:1px solid rgba(255,255,255,.6);background:rgba(255,255,255,.15);color:#fff;padding:8px 14px;border-radius:10px;font-size:.85rem;cursor:pointer;white-space:nowrap;">← 換班級</button>
+</div>
 <div class="wrap">
 
   <div class="card" id="loginCard">
@@ -226,6 +229,7 @@ onAuthStateChanged(auth, async user => {
   uid = user.uid;
   document.getElementById('loginCard').classList.add('hidden');
   document.getElementById('classCard').classList.remove('hidden');
+  document.getElementById('backToClassBtn').classList.remove('hidden');
   const snap = await getDocs(query(collection(db, 'classes'), where('teacherId', '==', uid)));
   const sel = document.getElementById('classSelect');
   snap.forEach(d => {
@@ -233,6 +237,10 @@ onAuthStateChanged(auth, async user => {
     opt.value = d.id; opt.textContent = d.data().name;
     sel.appendChild(opt);
   });
+});
+
+document.getElementById('backToClassBtn').addEventListener('click', () => {
+  document.getElementById('classCard').scrollIntoView({ behavior: 'smooth' });
 });
 
 document.getElementById('classSelect').addEventListener('change', e => {
