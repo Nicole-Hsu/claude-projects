@@ -38,10 +38,10 @@ service cloud.firestore {
 
       match /joined/{studentId} {
         allow read: if true;
-        allow create: if request.resource.data.keys().hasAll(['name', 'studentNo', 'deviceToken', 'joinedAt', 'noteCount']) &&
+        allow create: if request.resource.data.keys().hasAll(['seatNo', 'deviceToken', 'joinedAt', 'noteCount']) &&
           request.resource.data.noteCount == 0;
         allow update: if isTeacherOf(roomClassId(roomId)) ||
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'studentNo', 'deviceToken', 'joinedAt']) ||
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seatNo', 'deviceToken', 'joinedAt']) ||
           (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['noteCount']) &&
            request.resource.data.noteCount == resource.data.noteCount + 1);
         allow delete: if isTeacherOf(roomClassId(roomId));

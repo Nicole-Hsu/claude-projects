@@ -93,6 +93,7 @@ button, select, input, textarea { font-family: inherit; }
 .note.selected { box-shadow: 0 0 0 3px var(--accent-dark); }
 .note .n-name { font-size: .8rem; font-weight: 700; margin-bottom: 4px; opacity: .85; display: flex; justify-content: space-between; gap: 6px; }
 .note .n-text { font-size: 1rem; line-height: 1.4; word-break: break-word; }
+.note .n-time { font-size: .68rem; opacity: .6; margin-top: 4px; }
 .note .n-del { border: none; background: none; color: inherit; opacity: .7; cursor: pointer; font-size: .78rem; padding: 0 2px; }
 @keyframes pop { 0% { transform: scale(.7); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
 
@@ -245,7 +246,7 @@ function renderNamePicker() {
     const s = d.data();
     const opt = document.createElement('option');
     opt.value = d.id;
-    opt.textContent = s.studentNo + '-' + s.name + (takenIds.has(d.id) ? '（已有人加入，選了也沒關係）' : '');
+    opt.textContent = s.seatNo + ' 號' + (takenIds.has(d.id) ? '（已有人加入，選了也沒關係）' : '');
     sel.appendChild(opt);
   });
   if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
@@ -272,8 +273,7 @@ document.getElementById('confirmNameBtn').addEventListener('click', async () => 
   const sel = document.getElementById('nameSelect');
   const sid = sel.value;
   const s = rosterDocs.find(d => d.id === sid).data();
-  const studentNo = s.studentNo;
-  const name = s.name;
+  const seatNo = s.seatNo;
   const token = uuid();
   try {
     const ref = doc(db, 'rooms', roomId, 'joined', sid);
@@ -281,9 +281,9 @@ document.getElementById('confirmNameBtn').addEventListener('click', async () => 
       const snap = await tx.get(ref);
       if (snap.exists()) {
         // 已經有人（可能是自己換裝置）加入過，保留原本的發文則數，只更新身份資訊
-        tx.update(ref, { name, studentNo, deviceToken: token, joinedAt: serverTimestamp() });
+        tx.update(ref, { seatNo, deviceToken: token, joinedAt: serverTimestamp() });
       } else {
-        tx.set(ref, { name, studentNo, deviceToken: token, joinedAt: serverTimestamp(), noteCount: 0 });
+        tx.set(ref, { seatNo, deviceToken: token, joinedAt: serverTimestamp(), noteCount: 0 });
       }
     });
     studentId = sid; deviceToken = token;
@@ -352,7 +352,7 @@ function noteEl(n, idx) {
   const nameRow = document.createElement('div');
   nameRow.className = 'n-name';
   const nameSpan = document.createElement('span');
-  nameSpan.textContent = n.name + ' #' + n.studentNo;
+  nameSpan.textContent = n.seatNo + ' 號';
   nameRow.appendChild(nameSpan);
   if (n.groupId) {
     const leave = document.createElement('button');
@@ -369,6 +369,12 @@ function noteEl(n, idx) {
   textDiv.className = 'n-text';
   textDiv.textContent = n.text;
   el.appendChild(nameRow); el.appendChild(textDiv);
+  if (n.createdAt && n.createdAt.toDate) {
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'n-time';
+    timeDiv.textContent = n.createdAt.toDate().toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    el.appendChild(timeDiv);
+  }
   el.addEventListener('click', ev => {
     ev.stopPropagation();
     if (!selectedNoteId) {
@@ -485,7 +491,7 @@ document.getElementById('postBtn').addEventListener('click', async () => {
       }
       const noteRef = doc(collection(db, 'rooms', roomId, 'notes'));
       tx.set(noteRef, {
-        studentId, deviceToken, name: jData.name, studentNo: jData.studentNo,
+        studentId, deviceToken, seatNo: jData.seatNo,
         text, categoryId: null, createdAt: serverTimestamp()
       });
       tx.update(jRef, { noteCount: jData.noteCount + 1 });

@@ -52,6 +52,7 @@ button, input, select, textarea { font-family: inherit; }
 .note.selected { box-shadow: 0 0 0 3px var(--accent-dark); }
 .note .n-name { font-size: .8rem; font-weight: 700; margin-bottom: 4px; opacity: .85; display: flex; justify-content: space-between; gap: 6px; }
 .note .n-text { font-size: 1rem; line-height: 1.4; word-break: break-word; }
+.note .n-time { font-size: .68rem; opacity: .6; margin-top: 4px; }
 .note .n-del { border: none; background: none; color: inherit; opacity: .6; cursor: pointer; font-size: .78rem; padding: 0 2px; }
 @keyframes pop { 0% { transform: scale(.7); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
 .cluster { border: 1.5px dashed var(--text-dim); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,.4); }
@@ -106,8 +107,8 @@ button, input, select, textarea { font-family: inherit; }
     </div>
     <div id="rosterEditArea" class="hidden" style="margin-top:14px;">
       <div class="field">
-        <label>學號＋姓名，一行一位</label>
-        <textarea id="rosterInput" placeholder="12,陳小安&#10;05,林小婷&#10;19,黃小宇"></textarea>
+        <label>座號（匿名，不用姓名/學號）——可以打範圍例如 1-45，或一行一個、逗號分隔都可以</label>
+        <textarea id="rosterInput" placeholder="1-45"></textarea>
       </div>
       <button class="btn" id="saveRosterBtn">儲存名單</button>
       <div class="err" id="rosterErr"></div>
@@ -140,7 +141,8 @@ button, input, select, textarea { font-family: inherit; }
       <h2 style="margin-bottom:0;">這個議題 <span class="badge" id="activeBadge">進行中</span></h2>
       <button class="btn secondary" id="collapseTopicBtn" style="padding:6px 12px;font-size:.82rem;">收合</button>
     </div>
-    <p style="font-weight:700;margin:10px 0;" id="activeQuestion"></p>
+    <p style="font-weight:700;margin:10px 0 2px;" id="activeQuestion"></p>
+    <p style="font-size:.8rem;color:var(--text-mid);margin-bottom:10px;" id="activeCreatedAt"></p>
     <div class="row" style="align-items:center;">
       <div>
         <div id="roomLink"></div>
@@ -234,9 +236,9 @@ document.getElementById('classSelect').addEventListener('change', e => {
 async function loadRosterIntoTextarea() {
   const rSnap = await getDocs(collection(db, 'classes', classId, 'students'));
   const students = rSnap.docs.map(d => d.data());
-  students.sort((a, b) => a.studentNo.localeCompare(b.studentNo, undefined, { numeric: true }));
-  document.getElementById('rosterInput').value = students.map(s => s.studentNo + ',' + s.name).join('\n');
-  document.getElementById('rosterCount').textContent = '目前已有 ' + students.length + ' 位學生';
+  students.sort((a, b) => a.seatNo.localeCompare(b.seatNo, undefined, { numeric: true }));
+  document.getElementById('rosterInput').value = students.map(s => s.seatNo).join(', ');
+  document.getElementById('rosterCount').textContent = '目前已有 ' + students.length + ' 個座號';
   const editArea = document.getElementById('rosterEditArea');
   const toggleBtn = document.getElementById('toggleRosterBtn');
   if (students.length > 0) {
@@ -282,7 +284,7 @@ async function loadTopicList() {
       btn.textContent = '查看';
       btn.addEventListener('click', () => {
         roomId = d.id;
-        openActiveRoom(data.question, data.maxNotesPerStudent || 0);
+        openActiveRoom(data.question, data.maxNotesPerStudent || 0, data.createdAt);
         document.getElementById('activeRoomCard').scrollIntoView({ behavior: 'smooth' });
       });
       const delBtn = document.createElement('button');
@@ -352,20 +354,35 @@ document.getElementById('useClassBtn').addEventListener('click', async () => {
   }
 });
 
+function parseSeatNos(text) {
+  const tokens = text.split(/[,，\n]+/).map(t => t.trim()).filter(Boolean);
+  const seats = new Set();
+  tokens.forEach(tok => {
+    const rangeMatch = tok.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (rangeMatch) {
+      let start = parseInt(rangeMatch[1], 10), end = parseInt(rangeMatch[2], 10);
+      if (start > end) { const t = start; start = end; end = t; }
+      for (let i = start; i <= end; i++) seats.add(String(i));
+    } else {
+      seats.add(tok);
+    }
+  });
+  return [...seats];
+}
+
 document.getElementById('saveRosterBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('rosterErr');
   errEl.textContent = '';
-  const lines = document.getElementById('rosterInput').value.split('\n').map(l => l.trim()).filter(Boolean);
-  if (!lines.length) { errEl.textContent = '請至少輸入一位學生'; return; }
+  const seatNos = parseSeatNos(document.getElementById('rosterInput').value);
+  if (!seatNos.length) { errEl.textContent = '請至少輸入一個座號，例如 1-45'; return; }
   try {
-    const batch = writeBatch(db);
-    lines.forEach(line => {
-      const parts = line.split(/[,，\s]+/).filter(Boolean);
-      if (parts.length < 2) return;
-      const [studentNo, name] = parts;
-      batch.set(doc(db, 'classes', classId, 'students', studentNo), { name, studentNo });
-    });
-    await batch.commit();
+    for (let i = 0; i < seatNos.length; i += 450) {
+      const batch = writeBatch(db);
+      seatNos.slice(i, i + 450).forEach(seatNo => {
+        batch.set(doc(db, 'classes', classId, 'students', seatNo), { seatNo });
+      });
+      await batch.commit();
+    }
     await loadRosterIntoTextarea();
   } catch (e) {
     errEl.textContent = e.message;
@@ -398,16 +415,19 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
     roomId = code;
     document.getElementById('questionInput').value = '';
     document.getElementById('roomCard').classList.add('hidden');
-    openActiveRoom(question, maxNotes);
+    openActiveRoom(question, maxNotes, { toDate: () => new Date() });
     loadTopicList();
   } catch (e) {
     errEl.textContent = e.message;
   }
 });
 
-function openActiveRoom(question, currentMaxNotes) {
+function openActiveRoom(question, currentMaxNotes, createdAt) {
   document.getElementById('activeRoomCard').classList.remove('hidden');
   document.getElementById('attendanceCard').classList.remove('hidden');
+  const createdEl = document.getElementById('activeCreatedAt');
+  createdEl.textContent = (createdAt && createdAt.toDate) ?
+    '成立於 ' + createdAt.toDate().toLocaleString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
   document.getElementById('moderationCard').classList.remove('hidden');
   document.getElementById('activeQuestion').textContent = question;
   document.getElementById('editMaxNotesInput').value = currentMaxNotes;
@@ -471,9 +491,9 @@ function openActiveRoom(question, currentMaxNotes) {
 
       const rows = roster.map(s => {
         const j = joinedMap[s.id];
-        return { id: s.id, name: s.name, studentNo: s.studentNo, joined: !!j, noteCount: j ? (j.noteCount || 0) : 0 };
+        return { id: s.id, seatNo: s.seatNo, joined: !!j, noteCount: j ? (j.noteCount || 0) : 0 };
       });
-      rows.sort((a, b) => a.noteCount - b.noteCount || a.studentNo.localeCompare(b.studentNo));
+      rows.sort((a, b) => a.noteCount - b.noteCount || a.seatNo.localeCompare(b.seatNo, undefined, { numeric: true }));
       document.getElementById('silentCount').textContent = rows.filter(r => r.noteCount === 0).length;
 
       const list = document.getElementById('joinedList');
@@ -485,7 +505,7 @@ function openActiveRoom(question, currentMaxNotes) {
         if (r.noteCount === 0) row.style.color = 'var(--danger)';
         const status = !r.joined ? '尚未加入' : (r.noteCount === 0 ? '已加入，0 則' : r.noteCount + ' 則');
         const left = document.createElement('span');
-        left.textContent = r.name + ' #' + r.studentNo;
+        left.textContent = r.seatNo + ' 號';
         const right = document.createElement('span');
         right.style.cssText = 'display:flex;align-items:center;gap:8px;';
         const statusSpan = document.createElement('span');
@@ -498,7 +518,7 @@ function openActiveRoom(question, currentMaxNotes) {
           releaseBtn.style.cssText = 'border:1px solid var(--border);background:#fff;color:var(--text-mid);font-size:.72rem;padding:3px 8px;border-radius:999px;cursor:pointer;';
           releaseBtn.addEventListener('click', async ev => {
             ev.stopPropagation();
-            if (!confirm(r.name + ' #' + r.studentNo + ' 目前選的名字要解除嗎？解除後這個學號可以被重新選一次。')) return;
+            if (!confirm(r.seatNo + ' 號目前選的座號要解除嗎？解除後這個座號可以被重新選一次。')) return;
             await deleteDoc(doc(db, 'rooms', roomId, 'joined', r.id));
           });
           right.appendChild(releaseBtn);
@@ -555,7 +575,7 @@ function tNoteEl(n, idx) {
   const nameRow = document.createElement('div');
   nameRow.className = 'n-name';
   const nameSpan = document.createElement('span');
-  nameSpan.textContent = n.name + ' #' + n.studentNo;
+  nameSpan.textContent = n.seatNo + ' 號';
   const del = document.createElement('button');
   del.className = 'n-del';
   del.textContent = '✕';
@@ -581,6 +601,12 @@ function tNoteEl(n, idx) {
   textDiv.className = 'n-text';
   textDiv.textContent = n.text;
   el.appendChild(nameRow); el.appendChild(textDiv);
+  if (n.createdAt && n.createdAt.toDate) {
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'n-time';
+    timeDiv.textContent = n.createdAt.toDate().toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    el.appendChild(timeDiv);
+  }
   return el;
 }
 
