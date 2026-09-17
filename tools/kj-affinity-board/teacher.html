@@ -628,6 +628,14 @@ function tNoteEl(n, idx) {
   nameRow.className = 'n-name';
   const nameSpan = document.createElement('span');
   nameSpan.textContent = n.seatNo + ' 號';
+  nameSpan.style.cursor = 'pointer';
+  nameSpan.title = '點一下改成正確的座號';
+  nameSpan.addEventListener('click', ev => {
+    ev.stopPropagation();
+    const newSeat = prompt('這則便利貼要改成哪個座號？', n.seatNo);
+    if (!newSeat || !newSeat.trim() || newSeat.trim() === n.seatNo) return;
+    updateDoc(doc(db, 'rooms', roomId, 'notes', n.id), { seatNo: newSeat.trim(), studentId: newSeat.trim() });
+  });
   const del = document.createElement('button');
   del.className = 'n-del';
   del.textContent = '✕';
