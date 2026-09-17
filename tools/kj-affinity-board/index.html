@@ -124,10 +124,10 @@ button, select, input, textarea { font-family: inherit; }
 <div class="screen active" id="screen-join">
   <div class="card">
     <div class="field">
-      <label>房間代碼</label>
+      <label>討論室代碼</label>
       <input id="roomCodeInput" placeholder="例如 8F3K2Q" autocomplete="off" style="text-transform:uppercase;">
     </div>
-    <button class="btn" id="enterRoomBtn">進入房間</button>
+    <button class="btn" id="enterRoomBtn">進入討論室</button>
     <div class="err" id="joinErr"></div>
   </div>
 </div>
@@ -206,9 +206,9 @@ function storageKey(rid) { return 'kj_identity_' + rid; }
 
 async function loadRoom(rid) {
   const snap = await getDoc(doc(db, 'rooms', rid));
-  if (!snap.exists()) throw new Error('找不到這個房間代碼，請跟老師確認');
+  if (!snap.exists()) throw new Error('找不到這個討論室代碼，請跟老師確認');
   const d = snap.data();
-  if (d.active === false) throw new Error('這個房間已經關閉了');
+  if (d.active === false) throw new Error('這個討論室已經關閉了');
   classId = d.classId; maxNotes = d.maxNotesPerStudent || 0; question = d.question || '';
   return d;
 }
@@ -229,7 +229,7 @@ async function enterRoom(rid) {
     }
     showNamePicker();
   } catch (e) {
-    document.getElementById('joinErr').textContent = e.message || '進入房間失敗';
+    document.getElementById('joinErr').textContent = e.message || '進入討論室失敗';
   }
 }
 
@@ -291,7 +291,7 @@ document.getElementById('confirmNameBtn').addEventListener('click', async () => 
 
 document.getElementById('enterRoomBtn').addEventListener('click', () => {
   const v = document.getElementById('roomCodeInput').value.toUpperCase().trim();
-  if (!v) { document.getElementById('joinErr').textContent = '請輸入房間代碼'; return; }
+  if (!v) { document.getElementById('joinErr').textContent = '請輸入討論室代碼'; return; }
   enterRoom(v);
 });
 
