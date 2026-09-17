@@ -402,7 +402,19 @@ function tNoteEl(n, idx) {
     ev.stopPropagation();
     deleteDoc(doc(db, 'rooms', roomId, 'notes', n.id));
   });
-  nameRow.appendChild(nameSpan); nameRow.appendChild(del);
+  nameRow.appendChild(nameSpan);
+  if (n.groupId) {
+    const leave = document.createElement('button');
+    leave.className = 'n-del';
+    leave.textContent = '↩';
+    leave.setAttribute('aria-label', '退出這一群');
+    leave.addEventListener('click', ev => {
+      ev.stopPropagation();
+      updateDoc(doc(db, 'rooms', roomId, 'notes', n.id), { groupId: null });
+    });
+    nameRow.appendChild(leave);
+  }
+  nameRow.appendChild(del);
   const textDiv = document.createElement('div');
   textDiv.className = 'n-text';
   textDiv.textContent = n.text;

@@ -90,8 +90,9 @@ button, select, input, textarea { font-family: inherit; }
 }
 .col .note, .col-notes .note { width: 100%; }
 .note.selected { box-shadow: 0 0 0 3px var(--accent-dark); }
-.note .n-name { font-size: .68rem; font-weight: 700; margin-bottom: 3px; opacity: .85; }
+.note .n-name { font-size: .68rem; font-weight: 700; margin-bottom: 3px; opacity: .85; display: flex; justify-content: space-between; gap: 6px; }
 .note .n-text { font-size: .82rem; line-height: 1.35; word-break: break-word; }
+.note .n-del { border: none; background: none; color: inherit; opacity: .7; cursor: pointer; font-size: .78rem; padding: 0 2px; }
 @keyframes pop { 0% { transform: scale(.7); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
 
 .tap-hint { text-align: center; font-size: .78rem; color: var(--text-dim); margin: -6px 0 14px; }
@@ -336,8 +337,26 @@ function noteEl(n, idx) {
   const el = document.createElement('div');
   el.className = 'note ' + COLORS[idx % COLORS.length];
   el.dataset.id = n.id;
-  el.innerHTML = '<div class="n-name">' + n.name + ' #' + n.studentNo + '</div><div class="n-text"></div>';
-  el.querySelector('.n-text').textContent = n.text;
+  const nameRow = document.createElement('div');
+  nameRow.className = 'n-name';
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = n.name + ' #' + n.studentNo;
+  nameRow.appendChild(nameSpan);
+  if (n.groupId) {
+    const leave = document.createElement('button');
+    leave.className = 'n-del';
+    leave.textContent = '↩';
+    leave.setAttribute('aria-label', '退出這一群');
+    leave.addEventListener('click', ev => {
+      ev.stopPropagation();
+      updateDoc(doc(db, 'rooms', roomId, 'notes', n.id), { groupId: null });
+    });
+    nameRow.appendChild(leave);
+  }
+  const textDiv = document.createElement('div');
+  textDiv.className = 'n-text';
+  textDiv.textContent = n.text;
+  el.appendChild(nameRow); el.appendChild(textDiv);
   el.addEventListener('click', ev => {
     ev.stopPropagation();
     if (!selectedNoteId) {
