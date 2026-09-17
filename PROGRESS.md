@@ -13,6 +13,9 @@
 - 老師後台：`https://nicole-hsu.github.io/claude-projects/tools/kj-affinity-board/teacher.html`
 - 學生端：`https://nicole-hsu.github.io/claude-projects/tools/kj-affinity-board/index.html`（實際使用時網址會帶 `?r=<討論室代碼>`，由老師端 QR/連結產生）
 
+**⚠️ 部署工具的重要陷阱（給之後任何要改 firestore.rules 的 Claude）：**
+`firebase_deploy({ only: "firestore:rules" })` 在這個環境會回報 `status: success`，但**實際沒有真的把新規則推上線**（連續好幾次都這樣，用 `firebase_get_security_rules` 讀回來還是舊內容，直接打 REST API 驗證也證實舊規則仍在擋）。**改規則後一定要用 `only: "firestore"`（不要加 `:rules`），部署完務必用 `firebase_get_security_rules` 讀回來比對內容確認真的更新了，不要只看 deploy 回報的 success。** 另外，重新呼叫 `firebase_init` 時如果只帶 `rules` 參數、沒帶 `indexes`，會把 `firestore.indexes.json` 洗成空陣列、砍掉既有索引——要嘛兩個一起帶，要嘛用 Edit 直接改檔案再單獨部署，不要用 `firebase_init` 覆蓋。
+
 **本機測試階段（09-17）修過的問題與加過的功能，摘要如下（完整內容看 git log，逐條 commit message 都寫了原因）：**
 - 分類欄位改成「先發散收集便利貼、內容夠了再依實際主題命名分類」，不再要求開議題時就先設好分類（這是 KJ 法精神的修正，不是單純 bug；原本一次性 batch 寫入分類欄位也曾實測失敗過，改成隨時可加之後這種失敗不再是死路）
 - 便利貼之間可以先「靠在一起」成群組（不用先有分類名稱），群組可以命名成正式分類、也可以個別退出
