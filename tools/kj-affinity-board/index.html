@@ -246,7 +246,7 @@ function renderNamePicker() {
     const s = d.data();
     const opt = document.createElement('option');
     opt.value = d.id;
-    opt.textContent = s.name + '（學號 ' + s.studentNo + '）';
+    opt.textContent = s.studentNo + '-' + s.name;
     sel.appendChild(opt);
   });
   if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
@@ -272,9 +272,9 @@ document.getElementById('nameSelect').addEventListener('change', e => {
 document.getElementById('confirmNameBtn').addEventListener('click', async () => {
   const sel = document.getElementById('nameSelect');
   const sid = sel.value;
-  const label = sel.options[sel.selectedIndex].textContent;
-  const studentNo = label.match(/（學號 (.+)）/)[1];
-  const name = label.replace(/（學號 .+）/, '');
+  const s = rosterDocs.find(d => d.id === sid).data();
+  const studentNo = s.studentNo;
+  const name = s.name;
   const token = uuid();
   try {
     await setDoc(doc(db, 'rooms', roomId, 'joined', sid), {
