@@ -27,7 +27,6 @@ button, select, input, textarea { font-family: inherit; }
   padding: 16px 18px;
   text-align: center;
 }
-#header .label { font-size: .74rem; opacity: .85; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
 #header h1 { font-size: 1.15rem; font-weight: 700; line-height: 1.4; }
 
 .screen { display: none; padding: 18px 14px 40px; max-width: 640px; margin: 0 auto; }
@@ -118,8 +117,7 @@ button, select, input, textarea { font-family: inherit; }
 <body>
 
 <div id="header">
-  <div class="label">KJ 法課堂便利貼牆</div>
-  <h1 id="headerTitle">加入課堂</h1>
+  <h1 id="headerTitle">課堂便利貼牆</h1>
 </div>
 
 <div class="screen active" id="screen-join">
@@ -292,7 +290,7 @@ document.getElementById('enterRoomBtn').addEventListener('click', () => {
 });
 
 function enterBoard() {
-  document.getElementById('headerTitle').textContent = '便利貼牆';
+  document.getElementById('headerTitle').textContent = '課堂便利貼牆';
   document.getElementById('qText').textContent = question;
   show('screen-board');
   listenCategories();
