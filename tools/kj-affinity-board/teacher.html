@@ -221,6 +221,11 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
   const maxNotes = parseInt(document.getElementById('maxNotesInput').value || '0', 10);
   if (!question) { errEl.textContent = '請輸入議題／問題'; return; }
   try {
+    const rosterCheck = await getDocs(collection(db, 'classes', classId, 'students'));
+    if (rosterCheck.empty) {
+      errEl.textContent = '這個班級還沒有名單，請先在上面「儲存名單」，不然學生會找不到自己的名字';
+      return;
+    }
     const code = randomCode();
     await setDoc(doc(db, 'rooms', code), {
       classId, question, maxNotesPerStudent: maxNotes, active: true, createdAt: serverTimestamp()

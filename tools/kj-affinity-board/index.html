@@ -211,27 +211,39 @@ async function enterRoom(rid) {
         return;
       }
     }
-    await showNamePicker();
+    showNamePicker();
   } catch (e) {
     document.getElementById('joinErr').textContent = e.message || '進入房間失敗';
   }
 }
 
-async function showNamePicker() {
-  const rosterSnap = await import('https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js')
-    .then(m => m.getDocs(m.collection(db, 'classes', classId, 'students')));
-  const joinedSnap = await import('https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js')
-    .then(m => m.getDocs(m.collection(db, 'rooms', roomId, 'joined')));
-  const taken = new Set(joinedSnap.docs.map(d => d.id));
+let rosterDocs = [], takenIds = new Set();
+let unsubRoster = null, unsubJoined = null;
+
+function renderNamePicker() {
   const sel = document.getElementById('nameSelect');
+  const prev = sel.value;
   sel.innerHTML = '<option value="">請選擇…</option>';
-  rosterSnap.docs.forEach(d => {
-    if (taken.has(d.id)) return;
+  rosterDocs.forEach(d => {
+    if (takenIds.has(d.id)) return;
     const s = d.data();
     const opt = document.createElement('option');
     opt.value = d.id;
     opt.textContent = s.name + '（學號 ' + s.studentNo + '）';
     sel.appendChild(opt);
+  });
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+
+function showNamePicker() {
+  // 用即時監聽：老師補名單、或有人選走名字，畫面會自動更新，不用重新整理
+  unsubRoster = onSnapshot(collection(db, 'classes', classId, 'students'), snap => {
+    rosterDocs = snap.docs;
+    renderNamePicker();
+  });
+  unsubJoined = onSnapshot(collection(db, 'rooms', roomId, 'joined'), snap => {
+    takenIds = new Set(snap.docs.map(d => d.id));
+    renderNamePicker();
   });
   show('screen-name');
 }
@@ -253,6 +265,8 @@ document.getElementById('confirmNameBtn').addEventListener('click', async () => 
     });
     studentId = sid; deviceToken = token;
     localStorage.setItem(storageKey(roomId), JSON.stringify({ studentId: sid, deviceToken: token }));
+    if (unsubRoster) unsubRoster();
+    if (unsubJoined) unsubJoined();
     enterBoard();
   } catch (e) {
     document.getElementById('nameErr').textContent = '這個名字剛好被別人選走了，重新整理再試一次';
