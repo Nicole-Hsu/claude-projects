@@ -204,7 +204,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js';
 import {
   getFirestore, doc, setDoc, updateDoc, getDoc, getDocs, collection, query, where, orderBy, limit,
-  writeBatch, onSnapshot, deleteDoc, serverTimestamp
+  writeBatch, onSnapshot, deleteDoc, serverTimestamp, runTransaction
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -638,11 +638,30 @@ function tNoteEl(n, idx) {
   nameSpan.textContent = n.seatNo + ' 號';
   nameSpan.style.cursor = 'pointer';
   nameSpan.title = '點一下改成正確的座號';
-  nameSpan.addEventListener('click', ev => {
+  nameSpan.addEventListener('click', async ev => {
     ev.stopPropagation();
-    const newSeat = prompt('這則便利貼要改成哪個座號？', n.seatNo);
+    const newSeat = prompt('這則便利貼要改成哪個座號？（會同步把舊座號的發文則數 -1、新座號 +1）', n.seatNo);
     if (!newSeat || !newSeat.trim() || newSeat.trim() === n.seatNo) return;
-    updateDoc(doc(db, 'rooms', roomId, 'notes', n.id), { seatNo: newSeat.trim(), studentId: newSeat.trim() });
+    const newSeatTrim = newSeat.trim();
+    const oldSeat = n.seatNo;
+    try {
+      await runTransaction(db, async tx => {
+        const noteRef = doc(db, 'rooms', roomId, 'notes', n.id);
+        const oldJoinedRef = doc(db, 'rooms', roomId, 'joined', oldSeat);
+        const newJoinedRef = doc(db, 'rooms', roomId, 'joined', newSeatTrim);
+        const oldSnap = await tx.get(oldJoinedRef);
+        const newSnap = await tx.get(newJoinedRef);
+        tx.update(noteRef, { seatNo: newSeatTrim, studentId: newSeatTrim });
+        if (oldSnap.exists()) {
+          tx.update(oldJoinedRef, { noteCount: Math.max(0, (oldSnap.data().noteCount || 0) - 1) });
+        }
+        if (newSnap.exists()) {
+          tx.update(newJoinedRef, { noteCount: (newSnap.data().noteCount || 0) + 1 });
+        }
+      });
+    } catch (e) {
+      alert('改座號失敗：' + e.message);
+    }
   });
   const del = document.createElement('button');
   del.className = 'n-del';
