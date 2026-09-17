@@ -143,6 +143,7 @@ button, input, select, textarea { font-family: inherit; }
     <div class="row" style="align-items:center;">
       <div>
         <div id="roomLink"></div>
+        <button class="btn secondary" id="copyLinkBtn" style="margin-top:8px;padding:7px 14px;font-size:.85rem;">複製連結</button>
         <div id="qrBox" style="margin-top:10px;"></div>
       </div>
     </div>
@@ -376,7 +377,18 @@ function openActiveRoom(question, currentMaxNotes) {
   document.getElementById('activeQuestion').textContent = question;
   document.getElementById('editMaxNotesInput').value = currentMaxNotes;
   const url = location.origin + location.pathname.replace('teacher.html', 'index.html') + '?r=' + roomId;
-  document.getElementById('roomLink').textContent = '房間代碼：' + roomId + '　連結：' + url;
+  document.getElementById('roomLink').textContent = '討論室代碼：' + roomId + '　連結：' + url;
+  document.getElementById('copyLinkBtn').onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      const btn = document.getElementById('copyLinkBtn');
+      const original = btn.textContent;
+      btn.textContent = '已複製！';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    } catch (e) {
+      alert('複製失敗，請手動選取連結文字複製：' + url);
+    }
+  };
   document.getElementById('qrBox').innerHTML = '';
   new QRCode(document.getElementById('qrBox'), { text: url, width: 140, height: 140 });
 
