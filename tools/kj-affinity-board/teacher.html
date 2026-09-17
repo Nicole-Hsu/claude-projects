@@ -106,7 +106,7 @@ button, input, select, textarea { font-family: inherit; }
   </div>
 
   <div class="card hidden" id="attendanceCard">
-    <h2>已加入名單（<span id="joinedCount">0</span> 人）</h2>
+    <h2>參與狀況（<span id="joinedCount">0</span> / <span id="rosterTotal">0</span> 人已加入，<span id="silentCount">0</span> 人還沒發便利貼）</h2>
     <div class="joined-list" id="joinedList"></div>
   </div>
 
@@ -252,15 +252,31 @@ function openActiveRoom() {
   document.getElementById('qrBox').innerHTML = '';
   new QRCode(document.getElementById('qrBox'), { text: url, width: 140, height: 140 });
 
-  onSnapshot(collection(db, 'rooms', roomId, 'joined'), snap => {
-    document.getElementById('joinedCount').textContent = snap.size;
-    const list = document.getElementById('joinedList');
-    list.innerHTML = '';
-    snap.forEach(d => {
-      const s = d.data();
-      const row = document.createElement('div');
-      row.innerHTML = '<span>' + s.name + ' #' + s.studentNo + '</span><span>' + (s.noteCount || 0) + ' 則</span>';
-      list.appendChild(row);
+  getDocs(collection(db, 'classes', classId, 'students')).then(rosterSnap => {
+    const roster = rosterSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    document.getElementById('rosterTotal').textContent = roster.length;
+
+    onSnapshot(collection(db, 'rooms', roomId, 'joined'), snap => {
+      const joinedMap = {};
+      snap.forEach(d => { joinedMap[d.id] = d.data(); });
+      document.getElementById('joinedCount').textContent = snap.size;
+
+      const rows = roster.map(s => {
+        const j = joinedMap[s.id];
+        return { name: s.name, studentNo: s.studentNo, joined: !!j, noteCount: j ? (j.noteCount || 0) : 0 };
+      });
+      rows.sort((a, b) => a.noteCount - b.noteCount || a.studentNo.localeCompare(b.studentNo));
+      document.getElementById('silentCount').textContent = rows.filter(r => r.noteCount === 0).length;
+
+      const list = document.getElementById('joinedList');
+      list.innerHTML = '';
+      rows.forEach(r => {
+        const row = document.createElement('div');
+        const status = !r.joined ? '尚未加入' : (r.noteCount === 0 ? '已加入，0 則' : r.noteCount + ' 則');
+        row.innerHTML = '<span>' + r.name + ' #' + r.studentNo + '</span><span>' + status + '</span>';
+        if (r.noteCount === 0) row.style.color = 'var(--danger)';
+        list.appendChild(row);
+      });
     });
   });
 
