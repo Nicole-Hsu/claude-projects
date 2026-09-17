@@ -242,11 +242,10 @@ function renderNamePicker() {
   const prev = sel.value;
   sel.innerHTML = '<option value="">請選擇…</option>';
   rosterDocs.forEach(d => {
-    if (takenIds.has(d.id)) return;
     const s = d.data();
     const opt = document.createElement('option');
     opt.value = d.id;
-    opt.textContent = s.studentNo + '-' + s.name;
+    opt.textContent = s.studentNo + '-' + s.name + (takenIds.has(d.id) ? '（已有人加入，選了也沒關係）' : '');
     sel.appendChild(opt);
   });
   if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
@@ -277,8 +276,15 @@ document.getElementById('confirmNameBtn').addEventListener('click', async () => 
   const name = s.name;
   const token = uuid();
   try {
-    await setDoc(doc(db, 'rooms', roomId, 'joined', sid), {
-      name, studentNo, deviceToken: token, joinedAt: serverTimestamp(), noteCount: 0
+    const ref = doc(db, 'rooms', roomId, 'joined', sid);
+    await runTransaction(db, async tx => {
+      const snap = await tx.get(ref);
+      if (snap.exists()) {
+        // 已經有人（可能是自己換裝置）加入過，保留原本的發文則數，只更新身份資訊
+        tx.update(ref, { name, studentNo, deviceToken: token, joinedAt: serverTimestamp() });
+      } else {
+        tx.set(ref, { name, studentNo, deviceToken: token, joinedAt: serverTimestamp(), noteCount: 0 });
+      }
     });
     studentId = sid; deviceToken = token;
     localStorage.setItem(storageKey(roomId), JSON.stringify({ studentId: sid, deviceToken: token }));
@@ -286,7 +292,7 @@ document.getElementById('confirmNameBtn').addEventListener('click', async () => 
     if (unsubJoined) unsubJoined();
     enterBoard();
   } catch (e) {
-    document.getElementById('nameErr').textContent = '這個名字剛好被別人選走了，重新整理再試一次';
+    document.getElementById('nameErr').textContent = e.message || '加入失敗，再試一次';
   }
 });
 
