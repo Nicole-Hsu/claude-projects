@@ -123,7 +123,7 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js';
 import {
-  getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where,
+  getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, orderBy, limit,
   writeBatch, onSnapshot, deleteDoc, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
 
@@ -180,6 +180,21 @@ document.getElementById('useClassBtn').addEventListener('click', async () => {
     document.getElementById('roomCard').classList.remove('hidden');
     const rSnap = await getDocs(collection(db, 'classes', classId, 'students'));
     document.getElementById('rosterCount').textContent = '目前已有 ' + rSnap.size + ' 位學生';
+
+    try {
+      const roomSnap = await getDocs(query(
+        collection(db, 'rooms'), where('classId', '==', classId), where('active', '==', true),
+        orderBy('createdAt', 'desc'), limit(1)
+      ));
+      if (!roomSnap.empty) {
+        const d = roomSnap.docs[0];
+        roomId = d.id;
+        openActiveRoom(d.data().question);
+      }
+    } catch (e) {
+      // 找「上次房間」失敗（例如索引還沒建好）不擋班級選擇流程，安靜跳過即可
+      console.warn('讀取上次房間失敗，可能索引還在建立中：', e.message);
+    }
   } catch (e) {
     errEl.textContent = e.message;
   }
@@ -236,17 +251,17 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
     });
     await batch.commit();
     roomId = code;
-    openActiveRoom();
+    openActiveRoom(question);
   } catch (e) {
     errEl.textContent = e.message;
   }
 });
 
-function openActiveRoom() {
+function openActiveRoom(question) {
   document.getElementById('activeRoomCard').classList.remove('hidden');
   document.getElementById('attendanceCard').classList.remove('hidden');
   document.getElementById('moderationCard').classList.remove('hidden');
-  document.getElementById('activeQuestion').textContent = document.getElementById('questionInput').value.trim();
+  document.getElementById('activeQuestion').textContent = question;
   const url = location.origin + location.pathname.replace('teacher.html', 'index.html') + '?r=' + roomId;
   document.getElementById('roomLink').textContent = '房間代碼：' + roomId + '　連結：' + url;
   document.getElementById('qrBox').innerHTML = '';
