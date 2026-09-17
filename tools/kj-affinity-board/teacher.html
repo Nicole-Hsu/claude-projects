@@ -86,6 +86,16 @@ button, input, select, textarea { font-family: inherit; }
     <div class="err" id="loginErr"></div>
   </div>
 
+  <div class="card hidden" id="adminCard">
+    <h2>授權信箱管理（只有你看得到這張卡片）</h2>
+    <div id="allowedList" style="font-size:.9rem;margin-bottom:14px;"></div>
+    <div class="row">
+      <input id="newAllowedEmail" placeholder="老師的 Google 信箱" style="flex:2;">
+      <button class="btn secondary" id="addAllowedBtn" style="flex:1;">新增授權</button>
+    </div>
+    <div class="err" id="adminErr"></div>
+  </div>
+
   <div class="card hidden" id="classCard">
     <h2>班級</h2>
     <div class="field">
@@ -203,7 +213,7 @@ button, input, select, textarea { font-family: inherit; }
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js';
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js';
 import {
   getFirestore, doc, setDoc, updateDoc, getDoc, getDocs, collection, query, where, orderBy, limit,
@@ -227,12 +237,28 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   catch (e) { document.getElementById('loginErr').textContent = e.message; }
 });
 
+const ROOT_ADMIN_EMAIL = 'nicolehsu2004@gmail.com';
+
 onAuthStateChanged(auth, async user => {
   if (!user) return;
+  const userEmail = (user.email || '').toLowerCase();
+  const isRoot = userEmail === ROOT_ADMIN_EMAIL;
+  if (!isRoot) {
+    const allowSnap = await getDoc(doc(db, 'allowedEmails', userEmail));
+    if (!allowSnap.exists()) {
+      document.getElementById('loginErr').textContent = '這個帳號（' + user.email + '）還沒被授權使用，請聯絡管理者新增這個信箱。';
+      await signOut(auth);
+      return;
+    }
+  }
   uid = user.uid;
   document.getElementById('loginCard').classList.add('hidden');
   document.getElementById('classCard').classList.remove('hidden');
   document.getElementById('backToClassBtn').classList.remove('hidden');
+  if (isRoot) {
+    document.getElementById('adminCard').classList.remove('hidden');
+    loadAllowedList();
+  }
   const snap = await getDocs(query(collection(db, 'classes'), where('teacherId', '==', uid)));
   const sel = document.getElementById('classSelect');
   snap.forEach(d => {
@@ -240,6 +266,48 @@ onAuthStateChanged(auth, async user => {
     opt.value = d.id; opt.textContent = d.data().name;
     sel.appendChild(opt);
   });
+});
+
+async function loadAllowedList() {
+  const listEl = document.getElementById('allowedList');
+  listEl.innerHTML = '讀取中…';
+  const snap = await getDocs(collection(db, 'allowedEmails'));
+  listEl.innerHTML = '';
+  if (snap.empty) {
+    listEl.innerHTML = '<p style="color:var(--text-mid);">目前只有你（管理者）能登入，上面新增其他老師的信箱。</p>';
+    return;
+  }
+  snap.forEach(d => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);';
+    const span = document.createElement('span');
+    span.textContent = d.id;
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '移除';
+    removeBtn.style.cssText = 'border:1px solid var(--border);background:#fff;color:var(--danger);font-size:.78rem;padding:3px 10px;border-radius:999px;cursor:pointer;';
+    removeBtn.addEventListener('click', async () => {
+      if (!confirm('確定要移除 ' + d.id + ' 的授權嗎？')) return;
+      await deleteDoc(doc(db, 'allowedEmails', d.id));
+      loadAllowedList();
+    });
+    row.appendChild(span); row.appendChild(removeBtn);
+    listEl.appendChild(row);
+  });
+}
+
+document.getElementById('addAllowedBtn').addEventListener('click', async () => {
+  const input = document.getElementById('newAllowedEmail');
+  const errEl = document.getElementById('adminErr');
+  errEl.textContent = '';
+  const email = input.value.trim().toLowerCase();
+  if (!email || !email.includes('@')) { errEl.textContent = '請輸入完整的信箱'; return; }
+  try {
+    await setDoc(doc(db, 'allowedEmails', email), { addedAt: serverTimestamp() });
+    input.value = '';
+    loadAllowedList();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
 });
 
 document.getElementById('backToClassBtn').addEventListener('click', () => {
