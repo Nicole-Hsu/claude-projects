@@ -158,8 +158,11 @@ button, input, select, textarea { font-family: inherit; }
   </div>
 
   <div class="card hidden" id="attendanceCard">
-    <h2>參與狀況（<span id="joinedCount">0</span> / <span id="rosterTotal">0</span> 人已加入，<span id="silentCount">0</span> 人還沒發便利貼）</h2>
-    <div class="joined-list" id="joinedList"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h2 style="margin-bottom:0;">參與狀況（<span id="joinedCount">0</span> / <span id="rosterTotal">0</span> 人已加入，<span id="silentCount">0</span> 人還沒發便利貼）</h2>
+      <button class="btn secondary" id="toggleAttendanceBtn" style="padding:7px 14px;font-size:.85rem;">展開名單</button>
+    </div>
+    <div class="joined-list hidden" id="joinedList" style="margin-top:12px;"></div>
   </div>
 
   <div class="card hidden" id="moderationCard">
@@ -557,6 +560,12 @@ async function tTryMoveSelected(categoryId) {
   document.querySelectorAll('#moderationCard .note.selected').forEach(x => x.classList.remove('selected'));
   await updateDoc(doc(db, 'rooms', roomId, 'notes', id), { categoryId: categoryId, groupId: null });
 }
+
+document.getElementById('toggleAttendanceBtn').addEventListener('click', () => {
+  const list = document.getElementById('joinedList');
+  const nowHidden = list.classList.toggle('hidden');
+  document.getElementById('toggleAttendanceBtn').textContent = nowHidden ? '展開名單' : '收合名單';
+});
 
 document.getElementById('collapseTopicBtn').addEventListener('click', () => {
   document.getElementById('activeRoomCard').classList.add('hidden');
