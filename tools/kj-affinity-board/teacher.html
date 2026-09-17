@@ -37,6 +37,26 @@ button, input, select, textarea { font-family: inherit; }
 .joined-list div { padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
 .note-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .88rem; }
 .note-row .del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: .8rem; }
+
+.pool-box { background: rgba(0,0,0,.03); border-radius: 14px; padding: 12px; margin-bottom: 16px; min-height: 60px; }
+.pool-title { font-size: .76rem; color: var(--text-dim); margin-bottom: 8px; }
+.notes-wrap { display: flex; flex-wrap: wrap; gap: 10px; }
+.columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.col { background: rgba(0,0,0,.03); border: 1.5px dashed var(--border); border-radius: 14px; padding: 10px; min-height: 90px; }
+.col-title { font-size: .82rem; font-weight: 700; color: var(--text-mid); margin-bottom: 8px; }
+.col-notes { display: flex; flex-direction: column; gap: 8px; min-height: 30px; }
+.note { width: 128px; padding: 9px 9px 7px; border-radius: 3px 12px 4px 11px; cursor: pointer; position: relative; animation: pop .28s ease-out; }
+.col .note { width: 100%; }
+.note.selected { box-shadow: 0 0 0 3px var(--accent-dark); }
+.note .n-name { font-size: .68rem; font-weight: 700; margin-bottom: 3px; opacity: .85; display: flex; justify-content: space-between; gap: 6px; }
+.note .n-text { font-size: .82rem; line-height: 1.35; word-break: break-word; }
+.note .n-del { border: none; background: none; color: inherit; opacity: .6; cursor: pointer; font-size: .78rem; padding: 0 2px; }
+@keyframes pop { 0% { transform: scale(.7); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+.c0 { background: #fde7c5; } .c0 .n-name { color: #8a5a10; } .c0 .n-text { color: #5c3c08; }
+.c1 { background: #cdeee0; } .c1 .n-name { color: #146850; } .c1 .n-text { color: #0c4636; }
+.c2 { background: #f6cfe0; } .c2 .n-name { color: #9c2f5e; } .c2 .n-text { color: #6e2142; }
+.c3 { background: #d6e4fb; } .c3 .n-name { color: #29579e; } .c3 .n-text { color: #1c3c6e; }
+.c4 { background: #e3dbf9; } .c4 .n-name { color: #5c419e; } .c4 .n-text { color: #40306e; }
 .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .74rem; background: var(--ok); color: #fff; }
 .cat-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px 5px 12px; border-radius: 999px; background: #f3ead9; font-size: .82rem; }
 .cat-chip button { border: none; background: none; color: var(--text-dim); cursor: pointer; font-size: .9rem; line-height: 1; padding: 2px; }
@@ -125,8 +145,12 @@ button, input, select, textarea { font-family: inherit; }
   </div>
 
   <div class="card hidden" id="moderationCard">
-    <h2>便利貼列表（可刪除不當內容）</h2>
-    <div id="notesList"></div>
+    <h2>便利貼牆（跟學生看到的一樣，可投影給全班；點便利貼上的 ✕ 可刪除不當內容）</h2>
+    <div class="pool-box">
+      <div class="pool-title">尚未分類</div>
+      <div class="notes-wrap" id="tPool"></div>
+    </div>
+    <div class="columns" id="tColumns"></div>
   </div>
 
 </div>
@@ -277,16 +301,16 @@ function openActiveRoom(question, currentMaxNotes) {
   new QRCode(document.getElementById('qrBox'), { text: url, width: 140, height: 140 });
 
   onSnapshot(collection(db, 'rooms', roomId, 'categories'), snap => {
-    const cats = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+    tCategories = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
     const list = document.getElementById('catList');
     list.innerHTML = '';
-    if (!cats.length) {
+    if (!tCategories.length) {
       const hint = document.createElement('div');
       hint.style.cssText = 'font-size:.82rem;color:var(--text-mid);';
       hint.textContent = '還沒有分類欄位，這是正常的——先讓大家把便利貼發完，等內容夠了再依實際出現的主題新增分類';
       list.appendChild(hint);
     }
-    cats.forEach(c => {
+    tCategories.forEach(c => {
       const chip = document.createElement('span');
       chip.className = 'cat-chip';
       const label = document.createElement('span');
@@ -298,6 +322,7 @@ function openActiveRoom(question, currentMaxNotes) {
       chip.appendChild(label); chip.appendChild(del);
       list.appendChild(chip);
     });
+    renderTeacherBoard();
   });
 
   getDocs(collection(db, 'classes', classId, 'students')).then(rosterSnap => {
@@ -329,21 +354,79 @@ function openActiveRoom(question, currentMaxNotes) {
   });
 
   onSnapshot(collection(db, 'rooms', roomId, 'notes'), snap => {
-    const list = document.getElementById('notesList');
-    list.innerHTML = '';
-    snap.forEach(d => {
-      const n = d.data();
-      const row = document.createElement('div');
-      row.className = 'note-row';
-      const span = document.createElement('span');
-      span.textContent = n.name + ' #' + n.studentNo + '：' + n.text;
-      const btn = document.createElement('button');
-      btn.className = 'del'; btn.textContent = '刪除';
-      btn.addEventListener('click', () => deleteDoc(doc(db, 'rooms', roomId, 'notes', d.id)));
-      row.appendChild(span); row.appendChild(btn);
-      list.appendChild(row);
-    });
+    tNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTeacherBoard();
   });
+}
+
+let tCategories = [], tNotes = [];
+const T_COLORS = ['c0', 'c1', 'c2', 'c3', 'c4'];
+let tSelectedNoteId = null;
+
+function tNoteEl(n, idx) {
+  const el = document.createElement('div');
+  el.className = 'note ' + T_COLORS[idx % T_COLORS.length];
+  el.addEventListener('click', ev => {
+    ev.stopPropagation();
+    document.querySelectorAll('#moderationCard .note.selected').forEach(x => x.classList.remove('selected'));
+    if (tSelectedNoteId === n.id) { tSelectedNoteId = null; return; }
+    tSelectedNoteId = n.id;
+    el.classList.add('selected');
+  });
+  const nameRow = document.createElement('div');
+  nameRow.className = 'n-name';
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = n.name + ' #' + n.studentNo;
+  const del = document.createElement('button');
+  del.className = 'n-del';
+  del.textContent = '✕';
+  del.setAttribute('aria-label', '刪除這則便利貼');
+  del.addEventListener('click', ev => {
+    ev.stopPropagation();
+    deleteDoc(doc(db, 'rooms', roomId, 'notes', n.id));
+  });
+  nameRow.appendChild(nameSpan); nameRow.appendChild(del);
+  const textDiv = document.createElement('div');
+  textDiv.className = 'n-text';
+  textDiv.textContent = n.text;
+  el.appendChild(nameRow); el.appendChild(textDiv);
+  return el;
+}
+
+function renderTeacherBoard() {
+  const pool = document.getElementById('tPool');
+  const colsWrap = document.getElementById('tColumns');
+  if (!pool || !colsWrap) return;
+  pool.innerHTML = '';
+  colsWrap.innerHTML = '';
+  tCategories.forEach(c => {
+    const col = document.createElement('div');
+    col.className = 'col';
+    col.innerHTML = '<div class="col-title">' + c.label + '</div>';
+    const colNotes = document.createElement('div');
+    colNotes.className = 'col-notes';
+    col.appendChild(colNotes);
+    col.addEventListener('click', () => tTryMoveSelected(c.id));
+    colsWrap.appendChild(col);
+  });
+  tNotes.forEach((n, idx) => {
+    const el = tNoteEl(n, idx);
+    if (n.categoryId) {
+      const target = colsWrap.querySelector('.col:nth-child(' + (tCategories.findIndex(c => c.id === n.categoryId) + 1) + ') .col-notes');
+      if (target) target.appendChild(el); else pool.appendChild(el);
+    } else {
+      pool.appendChild(el);
+    }
+  });
+  pool.onclick = () => tTryMoveSelected(null);
+}
+
+async function tTryMoveSelected(categoryId) {
+  if (!tSelectedNoteId) return;
+  const id = tSelectedNoteId;
+  tSelectedNoteId = null;
+  document.querySelectorAll('#moderationCard .note.selected').forEach(x => x.classList.remove('selected'));
+  await updateDoc(doc(db, 'rooms', roomId, 'notes', id), { categoryId: categoryId });
 }
 
 document.getElementById('addCatBtn').addEventListener('click', async () => {
