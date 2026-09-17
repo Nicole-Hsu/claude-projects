@@ -93,7 +93,10 @@ button, input, select, textarea { font-family: inherit; }
       <label>新班級名稱</label>
       <input id="newClassName" placeholder="例如 三年一班">
     </div>
-    <button class="btn" id="useClassBtn">使用這個班級</button>
+    <div class="row" style="align-items:center;">
+      <button class="btn" id="useClassBtn">使用這個班級</button>
+      <button class="btn secondary" id="deleteClassBtn" style="color:var(--danger);flex:0 0 auto;">刪除這個班級</button>
+    </div>
     <div class="err" id="classErr"></div>
   </div>
 
@@ -234,6 +237,43 @@ onAuthStateChanged(auth, async user => {
 
 document.getElementById('classSelect').addEventListener('change', e => {
   document.getElementById('newClassField').classList.toggle('hidden', !!e.target.value);
+  document.getElementById('deleteClassBtn').classList.toggle('hidden', !e.target.value);
+});
+document.getElementById('deleteClassBtn').classList.add('hidden');
+
+document.getElementById('deleteClassBtn').addEventListener('click', async () => {
+  const sel = document.getElementById('classSelect');
+  const targetClassId = sel.value;
+  if (!targetClassId) return;
+  const className = sel.options[sel.selectedIndex].textContent;
+  if (!confirm('確定要刪除「' + className + '」這個班級嗎？\n底下所有議題、便利貼、座號名單都會一起刪掉，不能復原。')) return;
+  const errEl = document.getElementById('classErr');
+  errEl.textContent = '';
+  try {
+    const roomsSnap = await getDocs(query(collection(db, 'rooms'), where('classId', '==', targetClassId)));
+    for (const roomDoc of roomsSnap.docs) {
+      await deleteRoomData(roomDoc.id);
+    }
+    const studentsSnap = await getDocs(collection(db, 'classes', targetClassId, 'students'));
+    for (let i = 0; i < studentsSnap.docs.length; i += 450) {
+      const batch = writeBatch(db);
+      studentsSnap.docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+    await deleteDoc(doc(db, 'classes', targetClassId));
+    sel.remove(sel.selectedIndex);
+    sel.value = '';
+    document.getElementById('newClassField').classList.remove('hidden');
+    document.getElementById('deleteClassBtn').classList.add('hidden');
+    document.getElementById('rosterCard').classList.add('hidden');
+    document.getElementById('topicListCard').classList.add('hidden');
+    document.getElementById('activeRoomCard').classList.add('hidden');
+    document.getElementById('attendanceCard').classList.add('hidden');
+    document.getElementById('moderationCard').classList.add('hidden');
+    if (classId === targetClassId) { classId = null; roomId = null; }
+  } catch (e) {
+    errEl.textContent = '刪除失敗：' + e.message;
+  }
 });
 
 async function loadRosterIntoTextarea() {
@@ -305,20 +345,24 @@ async function loadTopicList() {
   }
 }
 
+async function deleteRoomData(id) {
+  const subcols = ['categories', 'joined', 'notes'];
+  for (const sub of subcols) {
+    const snap = await getDocs(collection(db, 'rooms', id, sub));
+    const docs = snap.docs;
+    for (let i = 0; i < docs.length; i += 450) {
+      const batch = writeBatch(db);
+      docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  await deleteDoc(doc(db, 'rooms', id));
+}
+
 async function deleteRoom(id, question) {
   if (!confirm('確定要刪除這個議題嗎？「' + question + '」\n裡面所有便利貼、分類、參與紀錄都會一起刪掉，不能復原。')) return;
   try {
-    const subcols = ['categories', 'joined', 'notes'];
-    for (const sub of subcols) {
-      const snap = await getDocs(collection(db, 'rooms', id, sub));
-      const docs = snap.docs;
-      for (let i = 0; i < docs.length; i += 450) {
-        const batch = writeBatch(db);
-        docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
-        await batch.commit();
-      }
-    }
-    await deleteDoc(doc(db, 'rooms', id));
+    await deleteRoomData(id);
     if (roomId === id) {
       document.getElementById('activeRoomCard').classList.add('hidden');
       document.getElementById('attendanceCard').classList.add('hidden');
