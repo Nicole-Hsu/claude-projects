@@ -184,6 +184,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const COLORS = ['c0', 'c1', 'c2', 'c3', 'c4'];
+function colorForNote(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return COLORS[h % COLORS.length];
+}
 const qs = new URLSearchParams(location.search);
 let roomId = (qs.get('r') || '').toUpperCase().trim();
 let classId = null, maxNotes = 0, question = '';
@@ -335,7 +340,7 @@ function renderColumns() {
 
 function noteEl(n, idx) {
   const el = document.createElement('div');
-  el.className = 'note ' + COLORS[idx % COLORS.length];
+  el.className = 'note ' + colorForNote(n.id);
   el.dataset.id = n.id;
   const nameRow = document.createElement('div');
   nameRow.className = 'n-name';

@@ -435,11 +435,16 @@ function openActiveRoom(question, currentMaxNotes) {
 
 let tCategories = [], tNotes = [], tHighlightId = null;
 const T_COLORS = ['c0', 'c1', 'c2', 'c3', 'c4'];
+function colorForNote(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return T_COLORS[h % T_COLORS.length];
+}
 let tSelectedNoteId = null;
 
 function tNoteEl(n, idx) {
   const el = document.createElement('div');
-  el.className = 'note ' + T_COLORS[idx % T_COLORS.length];
+  el.className = 'note ' + colorForNote(n.id);
   if (tHighlightId) {
     el.style.opacity = (n.studentId === tHighlightId) ? '1' : '.25';
     if (n.studentId === tHighlightId) el.style.boxShadow = '0 0 0 3px var(--accent-dark)';
