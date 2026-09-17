@@ -413,7 +413,7 @@ document.getElementById('createRoomBtn').addEventListener('click', async () => {
   try {
     const rosterCheck = await getDocs(collection(db, 'classes', classId, 'students'));
     if (rosterCheck.empty) {
-      errEl.textContent = '這個班級還沒有名單，請先在上面「儲存名單」，不然學生會找不到自己的名字';
+      errEl.textContent = '這個班級還沒有名單，請先在上面「儲存名單」，不然學生會找不到自己的座號';
       return;
     }
     const code = randomCode();

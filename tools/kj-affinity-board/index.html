@@ -137,7 +137,7 @@ button, select, input, textarea { font-family: inherit; }
 <div class="screen" id="screen-name">
   <div class="card">
     <div class="field">
-      <label>請選擇你的名字</label>
+      <label>請選擇您的座號</label>
       <select id="nameSelect"><option value="">請選擇…</option></select>
     </div>
     <button class="btn" id="confirmNameBtn" disabled>確定，開始討論</button>
@@ -255,7 +255,7 @@ function renderNamePicker() {
 function showNamePicker() {
   // 用即時監聽：老師補名單、或有人選走名字，畫面會自動更新，不用重新整理
   unsubRoster = onSnapshot(collection(db, 'classes', classId, 'students'), snap => {
-    rosterDocs = snap.docs;
+    rosterDocs = [...snap.docs].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
     renderNamePicker();
   });
   unsubJoined = onSnapshot(collection(db, 'rooms', roomId, 'joined'), snap => {
