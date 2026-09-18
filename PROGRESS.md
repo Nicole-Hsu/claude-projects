@@ -5,6 +5,20 @@
 
 ## ⏯️ 上次做到哪
 
+### 🗓️ 2026-09-18｜建立測試版，跟正式版分開開發
+
+**這次做的事**：
+- 這次 session 一開始 Firebase MCP 連不上，改用 Firestore 的公開讀取規則（`allow read: if true`）直接打 REST API 查資料庫內容，確認目前資料庫狀態：4 個班級（A2-1、A2-3 是使用者自己的測試資料；「309班」建了兩次、45 人跟 40 人各一筆，屬於另一位已授權的老師 `lfchao@mail.cgust.edu.tw`）、3 個議題、24 則便利貼。**A2-1、A2-3 測試班級使用者決定先不刪**，之後要清再說。
+- 使用者反映：想繼續加新功能，但不想影響「309班」那位老師正在用的正式版。**新建 `tools/kj-affinity-board-v2/`**（`index.html`/`teacher.html` 的程式碼副本），之後的新功能開發都先在這裡做。
+  - 測試版網址：`https://nicole-hsu.github.io/claude-projects/tools/kj-affinity-board-v2/teacher.html`
+  - **重要限制**：測試版跟正式版**共用同一個 Firebase 專案／Firestore 資料庫**，`firestore.rules` 是資料庫層級全域生效，沒辦法只套用在測試版——純前端/介面改動可以放心在測試版做，但牽涉安全規則的改動仍會立刻影響正式版，動規則前都要先跟使用者確認
+  - 約定流程：測試版驗證沒問題後，使用者會說「同步到正式版」，屆時把驗證過的改動套用回 `tools/kj-affinity-board/` 資料夾
+- 順便修正 CLAUDE.md 裡過時的 Firebase 專案名稱（原本誤寫 `my-teaching-tools`，已改成正確的 `kj-affinity-board`）
+
+**下次接手先看**：`tools/kj-affinity-board-v2/README.md`（測試版說明）＋下面 09-17 那次的完整功能/踩坑記錄。
+
+---
+
 ### 🗓️ 2026-09-17｜KJ 法課堂便利貼牆（已正式上線，白名單登入已啟用）
 
 **現況**：完整上線使用中。老師與學生兩端功能齊全，Firebase 專案 `kj-affinity-board`（Firestore + Google 登入）已接上，`master`／`gh-pages` 同步，經過大量實測與修正。
@@ -78,5 +92,7 @@ python -m http.server 8000
 ---
 
 ## ➡️ 下一步
+- **之後的新功能開發一律先在 `tools/kj-affinity-board-v2/` 做**，驗證沒問題使用者才會說「同步到正式版」
 - 使用者實際帶到課堂用一次，確認學校網路能連到 GitHub Pages 和 Firebase（建議正式上課前先用學校 Wi-Fi 排練一次）
 - 視實際使用情況決定要不要做：內容黑名單、發散/收斂狀態機、吉祥物插畫
+- A2-1、A2-3 這兩個測試班級使用者之後想清再清（目前先保留）
