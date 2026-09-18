@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>課堂便利貼工具 — 老師後台</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --bg: #fdf6ec; --card: #fff; --accent: #e08a3e; --accent-dark: #b96a24;
+  --text: #3a2e22; --text-mid: #7a6a5a; --text-dim: #ab9c8c;
+  --border: rgba(0,0,0,.10); --radius: 14px; --danger: #d96060; --ok: #4a9e78;
+}
+html { font-size: 19px; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { min-height: 100%; background: var(--bg); font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; color: var(--text); }
+button, input, select, textarea { font-family: inherit; }
+#header { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; padding: 18px 20px; }
+#header h1 { font-size: 1.25rem; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
+.card { background: var(--card); border-radius: var(--radius); box-shadow: 0 2px 12px rgba(0,0,0,.08); padding: 22px; margin-bottom: 18px; }
+.card h2 { font-size: 1.15rem; margin-bottom: 16px; color: var(--text-mid); }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: .9rem; font-weight: 600; color: var(--text-mid); margin-bottom: 7px; }
+.field input, .field textarea, .field select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 1.05rem; background: #fafafa; }
+.field input:not([type=number]), .field select { max-width: 520px; }
+.field textarea { min-height: 110px; resize: vertical; }
+.btn { display: inline-block; padding: 13px 22px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; font-size: 1rem; }
+.btn:active { background: var(--accent-dark); }
+.btn.secondary { background: #eee; color: var(--text); }
+.btn:disabled { background: #ccc; cursor: not-allowed; }
+.err { color: var(--danger); font-size: .82rem; margin-top: 8px; }
+.hidden { display: none !important; }
+.row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 140px; }
+#roomLink { font-size: .9rem; color: var(--accent-dark); word-break: break-all; }
+#qrBox { background: #fff; padding: 8px; border-radius: 10px; display: inline-block; }
+.joined-list { font-size: .85rem; }
+.joined-list div { padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+.note-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .88rem; }
+.note-row .del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: .8rem; }
+
+.pool-box { background: rgba(0,0,0,.06); border: 1px solid rgba(0,0,0,.06); border-radius: 14px; padding: 12px; margin-bottom: 16px; min-height: 60px; }
+.pool-title { font-size: .76rem; color: var(--text-dim); margin-bottom: 8px; }
+.notes-wrap { display: flex; flex-wrap: wrap; gap: 10px; }
+.columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.col { background: rgba(0,0,0,.03); border: 1.5px dashed var(--border); border-radius: 14px; padding: 10px; min-height: 90px; }
+.col-title { font-size: .82rem; font-weight: 700; color: var(--text-mid); margin-bottom: 8px; }
+.col-notes { display: flex; flex-direction: column; gap: 8px; min-height: 30px; }
+.note { width: 148px; padding: 10px 10px 8px; border-radius: 3px 12px 4px 11px; cursor: pointer; position: relative; animation: pop .28s ease-out; }
+.col .note { width: 100%; }
+.note.selected { box-shadow: 0 0 0 3px var(--accent-dark); }
+.note .n-name { font-size: .8rem; font-weight: 700; margin-bottom: 4px; opacity: .85; display: flex; justify-content: space-between; gap: 6px; }
+.note .n-text { font-size: 1rem; line-height: 1.4; word-break: break-word; }
+.note .n-time { font-size: .68rem; opacity: .6; margin-top: 4px; }
+.note .n-del { border: none; background: none; color: inherit; opacity: .6; cursor: pointer; font-size: .78rem; padding: 0 2px; }
+@keyframes pop { 0% { transform: scale(.7); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+.cluster { border: 1.5px dashed var(--text-dim); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,.4); }
+.cluster .cluster-notes { display: flex; flex-wrap: wrap; gap: 8px; }
+.cluster .cluster-notes .note { width: 148px; }
+.name-cat-btn { align-self: flex-start; border: none; background: var(--accent); color: #fff; font-size: .72rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; cursor: pointer; }
+.c0 { background: #fde7c5; } .c0 .n-name { color: #8a5a10; } .c0 .n-text { color: #5c3c08; }
+.c1 { background: #cdeee0; } .c1 .n-name { color: #146850; } .c1 .n-text { color: #0c4636; }
+.c2 { background: #f6cfe0; } .c2 .n-name { color: #9c2f5e; } .c2 .n-text { color: #6e2142; }
+.c3 { background: #d6e4fb; } .c3 .n-name { color: #29579e; } .c3 .n-text { color: #1c3c6e; }
+.c4 { background: #e3dbf9; } .c4 .n-name { color: #5c419e; } .c4 .n-text { color: #40306e; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .74rem; background: var(--ok); color: #fff; }
+.cat-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px 5px 12px; border-radius: 999px; background: #f3ead9; font-size: .82rem; }
+.cat-chip button { border: none; background: none; color: var(--text-dim); cursor: pointer; font-size: .9rem; line-height: 1; padding: 2px; }
+.topic-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.topic-row .topic-q { font-weight: 600; }
+.topic-row .topic-meta { font-size: .76rem; color: var(--text-dim); margin-top: 2px; }
+.topic-row .btn { padding: 7px 14px; font-size: .82rem; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="header" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+  <h1>課堂便利貼工具 — 老師後台</h1>
+  <button id="backToClassBtn" class="hidden" style="border:1px solid rgba(255,255,255,.6);background:rgba(255,255,255,.15);color:#fff;padding:8px 14px;border-radius:10px;font-size:.85rem;cursor:pointer;white-space:nowrap;">← 換班級</button>
+</div>
+<div class="wrap">
+
+  <div class="card" id="loginCard">
+    <h2>登入</h2>
+    <button class="btn" id="loginBtn">使用 Google 登入</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <div class="card hidden" id="adminCard">
+    <h2>授權信箱管理（只有你看得到這張卡片）</h2>
+    <div id="allowedList" style="font-size:.9rem;margin-bottom:14px;"></div>
+    <div class="row">
+      <input id="newAllowedEmail" placeholder="老師的 Google 信箱" style="flex:2;">
+      <button class="btn secondary" id="addAllowedBtn" style="flex:1;">新增授權</button>
+    </div>
+    <div class="err" id="adminErr"></div>
+  </div>
+
+  <div class="card hidden" id="classCard">
+    <h2>班級</h2>
+    <div class="field">
+      <label>選擇既有班級</label>
+      <select id="classSelect"><option value="">— 新增班級 —</option></select>
+    </div>
+    <div class="field" id="newClassField">
+      <label>新班級名稱</label>
+      <input id="newClassName" placeholder="例如 三年一班">
+    </div>
+    <div class="row" style="align-items:center;">
+      <button class="btn" id="useClassBtn">使用這個班級</button>
+      <button class="btn secondary" id="deleteClassBtn" style="color:var(--danger);flex:0 0 auto;">刪除這個班級</button>
+    </div>
+    <div class="err" id="classErr"></div>
+  </div>
+
+  <div class="card hidden" id="rosterCard">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h2 style="margin-bottom:0;">班級名單</h2>
+      <div>
+        <span id="rosterCount" style="font-size:.85rem;color:var(--text-mid);"></span>
+        <button class="btn secondary" id="toggleRosterBtn" style="margin-left:10px;padding:7px 14px;font-size:.85rem;">展開名單</button>
+      </div>
+    </div>
+    <div id="rosterEditArea" class="hidden" style="margin-top:14px;">
+      <div class="field">
+        <label>座號（匿名，不用姓名/學號）——可以打範圍例如 1-45，或一行一個、逗號分隔都可以</label>
+        <textarea id="rosterInput" placeholder="1-45"></textarea>
+      </div>
+      <button class="btn" id="saveRosterBtn">儲存名單</button>
+      <div class="err" id="rosterErr"></div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="topicListCard">
+    <h2>議題</h2>
+    <div id="topicList" style="font-size:.9rem;"></div>
+    <button class="btn secondary" id="newTopicToggleBtn" style="margin-top:12px;">＋ 開新議題</button>
+  </div>
+
+  <div class="card hidden" id="roomCard">
+    <h2>開新議題</h2>
+    <div class="field">
+      <label>本次議題／問題</label>
+      <input id="questionInput" placeholder="例如：我們社區怎麼設計會更友善？">
+    </div>
+    <div class="field">
+      <label>每人最多發幾則（0＝不限）</label>
+      <input id="maxNotesInput" type="number" min="0" value="3" style="max-width:160px;">
+    </div>
+    <p style="font-size:.8rem;color:var(--text-mid);margin-bottom:14px;">分類欄位不用現在設——等大家的便利貼收集得差不多了，再依實際內容新增分類（在下面「這個議題」那邊隨時可以加）。</p>
+    <button class="btn" id="createRoomBtn">開始這個議題</button>
+    <div class="err" id="roomErr"></div>
+  </div>
+
+  <div class="card hidden" id="activeRoomCard">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="margin-bottom:0;">這個議題 <span class="badge" id="activeBadge">進行中</span></h2>
+      <button class="btn secondary" id="collapseTopicBtn" style="padding:6px 12px;font-size:.82rem;">收合</button>
+    </div>
+    <p style="font-weight:700;margin:10px 0 2px;" id="activeQuestion"></p>
+    <p style="font-size:.8rem;color:var(--text-mid);margin-bottom:10px;" id="activeCreatedAt"></p>
+    <div class="row" style="align-items:center;">
+      <div>
+        <div id="roomLink"></div>
+        <button class="btn secondary" id="copyLinkBtn" style="margin-top:8px;padding:7px 14px;font-size:.85rem;">複製連結</button>
+        <div id="qrBox" style="margin-top:10px;"></div>
+      </div>
+    </div>
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+      <div style="font-size:.82rem;font-weight:600;color:var(--text-mid);margin-bottom:8px;">每人最多發幾則（0＝不限）</div>
+      <div class="row" style="align-items:center;">
+        <input id="editMaxNotesInput" type="number" min="0" style="flex:1;max-width:100px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:.95rem;background:#fafafa;">
+        <button class="btn secondary" id="saveMaxNotesBtn" style="flex:1;">更新（馬上生效）</button>
+      </div>
+      <div class="err" id="maxNotesErr"></div>
+    </div>
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+      <div style="font-size:.82rem;font-weight:600;color:var(--text-mid);margin-bottom:8px;">分類欄位</div>
+      <div id="catList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+      <div class="row">
+        <input id="newCatInput" placeholder="新增分類，例如：溝通" style="flex:2;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:.95rem;background:#fafafa;">
+        <button class="btn secondary" id="addCatBtn" style="flex:1;">新增分類</button>
+      </div>
+      <div class="err" id="catErr"></div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="attendanceCard">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h2 style="margin-bottom:0;">參與狀況（<span id="joinedCount">0</span> / <span id="rosterTotal">0</span> 人已加入，<span id="silentCount">0</span> 人還沒發便利貼）</h2>
+      <div style="display:flex;gap:8px;">
+        <button class="btn secondary" id="recalcBtn" style="padding:7px 14px;font-size:.85rem;">重新計算</button>
+        <button class="btn secondary" id="toggleAttendanceBtn" style="padding:7px 14px;font-size:.85rem;">展開名單</button>
+      </div>
+    </div>
+    <div class="joined-list hidden" id="joinedList" style="margin-top:12px;"></div>
+  </div>
+
+  <div class="card hidden" id="moderationCard">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h2 style="margin-bottom:0;">便利貼牆（跟學生看到的一樣，可投影給全班；點便利貼上的 ✕ 可刪除不當內容）</h2>
+      <button class="btn secondary" id="exportCsvBtn" style="padding:7px 14px;font-size:.85rem;white-space:nowrap;">匯出成 CSV</button>
+    </div>
+    <div class="pool-box" style="margin-top:14px;">
+      <div class="pool-title">尚未分類</div>
+      <div class="notes-wrap" id="tPool"></div>
+    </div>
+    <div class="columns" id="tColumns"></div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js';
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+} from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js';
+import {
+  getFirestore, doc, setDoc, updateDoc, getDoc, getDocs, collection, query, where, orderBy, limit,
+  writeBatch, onSnapshot, deleteDoc, serverTimestamp, runTransaction
+} from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDHv5IDqhZfBNAnOECLTx-Wk9khRdLjDTM",
+  authDomain: "kj-affinity-board.firebaseapp.com",
+  projectId: "kj-affinity-board",
+  storageBucket: "kj-affinity-board.firebasestorage.app",
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let uid = null, classId = null, roomId = null;
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) { document.getElementById('loginErr').textContent = e.message; }
+});
+
+const ROOT_ADMIN_EMAIL = 'nicolehsu2004@gmail.com';
+
+onAuthStateChanged(auth, async user => {
+  if (!user) return;
+  const userEmail = (user.email || '').toLowerCase();
+  const isRoot = userEmail === ROOT_ADMIN_EMAIL;
+  if (!isRoot) {
+    const allowSnap = await getDoc(doc(db, 'allowedEmails', userEmail));
+    if (!allowSnap.exists()) {
+      document.getElementById('loginErr').textContent = '這個帳號（' + user.email + '）還沒被授權使用，請聯絡管理者新增這個信箱。';
+      await signOut(auth);
+      return;
+    }
+  }
+  uid = user.uid;
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('classCard').classList.remove('hidden');
+  document.getElementById('backToClassBtn').classList.remove('hidden');
+  if (isRoot) {
+    document.getElementById('adminCard').classList.remove('hidden');
+    loadAllowedList();
+  }
+  const snap = await getDocs(query(collection(db, 'classes'), where('teacherId', '==', uid)));
+  const sel = document.getElementById('classSelect');
+  snap.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.id; opt.textContent = d.data().name;
+    sel.appendChild(opt);
+  });
+});
+
+async function loadAllowedList() {
+  const listEl = document.getElementById('allowedList');
+  listEl.innerHTML = '讀取中…';
+  const snap = await getDocs(collection(db, 'allowedEmails'));
+  listEl.innerHTML = '';
+  if (snap.empty) {
+    listEl.innerHTML = '<p style="color:var(--text-mid);">目前只有你（管理者）能登入，上面新增其他老師的信箱。</p>';
+    return;
+  }
+  snap.forEach(d => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);';
+    const span = document.createElement('span');
+    span.textContent = d.id;
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '移除';
+    removeBtn.style.cssText = 'border:1px solid var(--border);background:#fff;color:var(--danger);font-size:.78rem;padding:3px 10px;border-radius:999px;cursor:pointer;';
+    removeBtn.addEventListener('click', async () => {
+      if (!confirm('確定要移除 ' + d.id + ' 的授權嗎？')) return;
+      await deleteDoc(doc(db, 'allowedEmails', d.id));
+      loadAllowedList();
+    });
+    row.appendChild(span); row.appendChild(removeBtn);
+    listEl.appendChild(row);
+  });
+}
+
+document.getElementById('addAllowedBtn').addEventListener('click', async () => {
+  const input = document.getElementById('newAllowedEmail');
+  const errEl = document.getElementById('adminErr');
+  errEl.textContent = '';
+  const email = input.value.trim().toLowerCase();
+  if (!email || !email.includes('@')) { errEl.textContent = '請輸入完整的信箱'; return; }
+  try {
+    await setDoc(doc(db, 'allowedEmails', email), { addedAt: serverTimestamp() });
+    input.value = '';
+    loadAllowedList();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
+
+document.getElementById('backToClassBtn').addEventListener('click', () => {
+  document.getElementById('classCard').scrollIntoView({ behavior: 'smooth' });
+});
+
+document.getElementById('classSelect').addEventListener('change', e => {
+  document.getElementById('newClassField').classList.toggle('hidden', !!e.target.value);
+  document.getElementById('deleteClassBtn').classList.toggle('hidden', !e.target.value);
+});
+document.getElementById('deleteClassBtn').classList.add('hidden');
+
+document.getElementById('deleteClassBtn').addEventListener('click', async () => {
+  const sel = document.getElementById('classSelect');
+  const targetClassId = sel.value;
+  if (!targetClassId) return;
+  const className = sel.options[sel.selectedIndex].textContent;
+  if (!confirm('確定要刪除「' + className + '」這個班級嗎？\n底下所有議題、便利貼、座號名單都會一起刪掉，不能復原。')) return;
+  const errEl = document.getElementById('classErr');
+  errEl.textContent = '';
+  try {
+    const roomsSnap = await getDocs(query(collection(db, 'rooms'), where('classId', '==', targetClassId)));
+    for (const roomDoc of roomsSnap.docs) {
+      await deleteRoomData(roomDoc.id);
+    }
+    const studentsSnap = await getDocs(collection(db, 'classes', targetClassId, 'students'));
+    for (let i = 0; i < studentsSnap.docs.length; i += 450) {
+      const batch = writeBatch(db);
+      studentsSnap.docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+    await deleteDoc(doc(db, 'classes', targetClassId));
+    sel.remove(sel.selectedIndex);
+    sel.value = '';
+    document.getElementById('newClassField').classList.remove('hidden');
+    document.getElementById('deleteClassBtn').classList.add('hidden');
+    document.getElementById('rosterCard').classList.add('hidden');
+    document.getElementById('topicListCard').classList.add('hidden');
+    document.getElementById('activeRoomCard').classList.add('hidden');
+    document.getElementById('attendanceCard').classList.add('hidden');
+    document.getElementById('moderationCard').classList.add('hidden');
+    if (classId === targetClassId) { classId = null; roomId = null; }
+  } catch (e) {
+    errEl.textContent = '刪除失敗：' + e.message;
+  }
+});
+
+async function loadRosterIntoTextarea() {
+  const rSnap = await getDocs(collection(db, 'classes', classId, 'students'));
+  // 用 doc id 當座號（相容改版前的舊資料，那時 doc id 存的是學號，欄位名稱不同但值可以照樣當座號用）
+  const students = rSnap.docs.map(d => ({ seatNo: d.data().seatNo || d.id }));
+  students.sort((a, b) => a.seatNo.localeCompare(b.seatNo, undefined, { numeric: true }));
+  document.getElementById('rosterInput').value = students.map(s => s.seatNo).join(', ');
+  document.getElementById('rosterCount').textContent = '目前已有 ' + students.length + ' 個座號';
+  const editArea = document.getElementById('rosterEditArea');
+  const toggleBtn = document.getElementById('toggleRosterBtn');
+  if (students.length > 0) {
+    editArea.classList.add('hidden');
+    toggleBtn.textContent = '展開名單';
+  } else {
+    editArea.classList.remove('hidden');
+    toggleBtn.textContent = '收合名單';
+  }
+}
+
+document.getElementById('toggleRosterBtn').addEventListener('click', () => {
+  const editArea = document.getElementById('rosterEditArea');
+  const nowHidden = editArea.classList.toggle('hidden');
+  document.getElementById('toggleRosterBtn').textContent = nowHidden ? '展開名單' : '收合名單';
+});
+
+async function loadTopicList() {
+  const listEl = document.getElementById('topicList');
+  listEl.innerHTML = '正在讀取…';
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'rooms'), where('classId', '==', classId), where('active', '==', true),
+      orderBy('createdAt', 'desc'), limit(20)
+    ));
+    listEl.innerHTML = '';
+    if (snap.empty) {
+      listEl.innerHTML = '<p style="color:var(--text-mid);font-size:.85rem;">這個班級還沒開過議題，按下面「開新議題」開始第一個。</p>';
+      return;
+    }
+    snap.forEach(d => {
+      const data = d.data();
+      const row = document.createElement('div');
+      row.className = 'topic-row';
+      const dateStr = data.createdAt && data.createdAt.toDate ?
+        data.createdAt.toDate().toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      row.innerHTML = '<div><div class="topic-q"></div><div class="topic-meta">' + dateStr + '　代碼 ' + d.id + '</div></div>';
+      row.querySelector('.topic-q').textContent = data.question;
+      const btnGroup = document.createElement('div');
+      btnGroup.style.cssText = 'display:flex;gap:6px;';
+      const btn = document.createElement('button');
+      btn.className = 'btn secondary';
+      btn.textContent = '查看';
+      btn.addEventListener('click', () => {
+        roomId = d.id;
+        openActiveRoom(data.question, data.maxNotesPerStudent || 0, data.createdAt);
+        document.getElementById('activeRoomCard').scrollIntoView({ behavior: 'smooth' });
+      });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn secondary';
+      delBtn.style.color = 'var(--danger)';
+      delBtn.textContent = '刪除';
+      delBtn.addEventListener('click', () => deleteRoom(d.id, data.question));
+      btnGroup.appendChild(btn); btnGroup.appendChild(delBtn);
+      row.appendChild(btnGroup);
+      listEl.appendChild(row);
+    });
+  } catch (e) {
+    listEl.innerHTML = '<p style="color:var(--danger);font-size:.85rem;">' + e.message + '</p>';
+  }
+}
+
+async function deleteRoomData(id) {
+  const subcols = ['categories', 'joined', 'notes'];
+  for (const sub of subcols) {
+    const snap = await getDocs(collection(db, 'rooms', id, sub));
+    const docs = snap.docs;
+    for (let i = 0; i < docs.length; i += 450) {
+      const batch = writeBatch(db);
+      docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  await deleteDoc(doc(db, 'rooms', id));
+}
+
+async function deleteRoom(id, question) {
+  if (!confirm('確定要刪除這個議題嗎？「' + question + '」\n裡面所有便利貼、分類、參與紀錄都會一起刪掉，不能復原。')) return;
+  try {
+    await deleteRoomData(id);
+    if (roomId === id) {
+      document.getElementById('activeRoomCard').classList.add('hidden');
+      document.getElementById('attendanceCard').classList.add('hidden');
+      document.getElementById('moderationCard').classList.add('hidden');
+      roomId = null;
+    }
+    loadTopicList();
+  } catch (e) {
+    alert('刪除失敗：' + e.message);
+  }
+}
+
+document.getElementById('newTopicToggleBtn').addEventListener('click', () => {
+  document.getElementById('roomCard').classList.toggle('hidden');
+});
+
+document.getElementById('useClassBtn').addEventListener('click', async () => {
+  const sel = document.getElementById('classSelect');
+  const errEl = document.getElementById('classErr');
+  errEl.textContent = '';
+  try {
+    if (sel.value) {
+      classId = sel.value;
+    } else {
+      const name = document.getElementById('newClassName').value.trim();
+      if (!name) { errEl.textContent = '請輸入班級名稱'; return; }
+      const ref = doc(collection(db, 'classes'));
+      await setDoc(ref, { name, teacherId: uid, createdAt: serverTimestamp() });
+      classId = ref.id;
+    }
+    document.getElementById('rosterCard').classList.remove('hidden');
+    document.getElementById('topicListCard').classList.remove('hidden');
+    await loadRosterIntoTextarea();
+    await loadTopicList();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
+
+function parseSeatNos(text) {
+  const tokens = text.split(/[,，\n]+/).map(t => t.trim()).filter(Boolean);
+  const seats = new Set();
+  tokens.forEach(tok => {
+    const rangeMatch = tok.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (rangeMatch) {
+      let start = parseInt(rangeMatch[1], 10), end = parseInt(rangeMatch[2], 10);
+      if (start > end) { const t = start; start = end; end = t; }
+      for (let i = start; i <= end; i++) seats.add(String(i));
+    } else {
+      seats.add(tok);
+    }
+  });
+  return [...seats];
+}
+
+document.getElementById('saveRosterBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('rosterErr');
+  errEl.textContent = '';
+  const seatNos = parseSeatNos(document.getElementById('rosterInput').value);
+  if (!seatNos.length) { errEl.textContent = '請至少輸入一個座號，例如 1-45'; return; }
+  try {
+    // 整批覆蓋：先刪掉不在新清單裡的舊座號（例如改版前的舊格式資料），再寫入新的
+    const existingSnap = await getDocs(collection(db, 'classes', classId, 'students'));
+    const wanted = new Set(seatNos);
+    const toDelete = existingSnap.docs.filter(d => !wanted.has(d.id));
+    const toWrite = seatNos;
+    const ops = [...toDelete.map(d => ({ type: 'delete', ref: d.ref })), ...toWrite.map(seatNo => ({ type: 'set', ref: doc(db, 'classes', classId, 'students', seatNo), data: { seatNo } }))];
+    for (let i = 0; i < ops.length; i += 450) {
+      const batch = writeBatch(db);
+      ops.slice(i, i + 450).forEach(op => op.type === 'delete' ? batch.delete(op.ref) : batch.set(op.ref, op.data));
+      await batch.commit();
+    }
+    await loadRosterIntoTextarea();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
+
+function randomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+document.getElementById('createRoomBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('roomErr');
+  errEl.textContent = '';
+  const question = document.getElementById('questionInput').value.trim();
+  const maxNotes = parseInt(document.getElementById('maxNotesInput').value || '0', 10);
+  if (!question) { errEl.textContent = '請輸入議題／問題'; return; }
+  try {
+    const rosterCheck = await getDocs(collection(db, 'classes', classId, 'students'));
+    if (rosterCheck.empty) {
+      errEl.textContent = '這個班級還沒有名單，請先在上面「儲存名單」，不然學生會找不到自己的座號';
+      return;
+    }
+    const code = randomCode();
+    await setDoc(doc(db, 'rooms', code), {
+      classId, question, maxNotesPerStudent: maxNotes, active: true, createdAt: serverTimestamp()
+    });
+    roomId = code;
+    document.getElementById('questionInput').value = '';
+    document.getElementById('roomCard').classList.add('hidden');
+    openActiveRoom(question, maxNotes, { toDate: () => new Date() });
+    loadTopicList();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
+
+function openActiveRoom(question, currentMaxNotes, createdAt) {
+  document.getElementById('activeRoomCard').classList.remove('hidden');
+  document.getElementById('attendanceCard').classList.remove('hidden');
+  const createdEl = document.getElementById('activeCreatedAt');
+  createdEl.textContent = (createdAt && createdAt.toDate) ?
+    '成立於 ' + createdAt.toDate().toLocaleString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  document.getElementById('moderationCard').classList.remove('hidden');
+  document.getElementById('activeQuestion').textContent = question;
+  document.getElementById('editMaxNotesInput').value = currentMaxNotes;
+  const url = location.origin + location.pathname.replace('teacher.html', 'index.html') + '?r=' + roomId;
+  document.getElementById('roomLink').textContent = '討論室代碼：' + roomId + '　連結：' + url;
+  document.getElementById('copyLinkBtn').onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      const btn = document.getElementById('copyLinkBtn');
+      const original = btn.textContent;
+      btn.textContent = '已複製！';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    } catch (e) {
+      alert('複製失敗，請手動選取連結文字複製：' + url);
+    }
+  };
+  document.getElementById('qrBox').innerHTML = '';
+  new QRCode(document.getElementById('qrBox'), { text: url, width: 140, height: 140 });
+
+  onSnapshot(collection(db, 'rooms', roomId, 'categories'), snap => {
+    tCategories = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const list = document.getElementById('catList');
+    list.innerHTML = '';
+    if (!tCategories.length) {
+      const hint = document.createElement('div');
+      hint.style.cssText = 'font-size:.82rem;color:var(--text-mid);';
+      hint.textContent = '還沒有分類欄位，這是正常的——先讓大家把便利貼發完，等內容夠了再依實際出現的主題新增分類';
+      list.appendChild(hint);
+    }
+    tCategories.forEach(c => {
+      const chip = document.createElement('span');
+      chip.className = 'cat-chip';
+      const label = document.createElement('span');
+      label.textContent = c.label;
+      label.style.cursor = 'pointer';
+      label.title = '點一下改名稱';
+      label.addEventListener('click', () => {
+        const newLabel = prompt('改這個分類的名稱：', c.label);
+        if (newLabel && newLabel.trim() && newLabel.trim() !== c.label) {
+          updateDoc(doc(db, 'rooms', roomId, 'categories', c.id), { label: newLabel.trim() });
+        }
+      });
+      const del = document.createElement('button');
+      del.textContent = '✕';
+      del.setAttribute('aria-label', '刪除分類 ' + c.label);
+      del.addEventListener('click', () => deleteDoc(doc(db, 'rooms', roomId, 'categories', c.id)));
+      chip.appendChild(label); chip.appendChild(del);
+      list.appendChild(chip);
+    });
+    renderTeacherBoard();
+  });
+
+  getDocs(collection(db, 'classes', classId, 'students')).then(rosterSnap => {
+    const roster = rosterSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    document.getElementById('rosterTotal').textContent = roster.length;
+
+    onSnapshot(collection(db, 'rooms', roomId, 'joined'), snap => {
+      const joinedMap = {};
+      snap.forEach(d => { joinedMap[d.id] = d.data(); });
+      document.getElementById('joinedCount').textContent = snap.size;
+
+      const rows = roster.map(s => {
+        const j = joinedMap[s.id];
+        return { id: s.id, seatNo: s.seatNo || s.id, joined: !!j, noteCount: j ? (j.noteCount || 0) : 0 };
+      });
+      rows.sort((a, b) => a.noteCount - b.noteCount || a.seatNo.localeCompare(b.seatNo, undefined, { numeric: true }));
+      document.getElementById('silentCount').textContent = rows.filter(r => r.noteCount === 0).length;
+
+      const list = document.getElementById('joinedList');
+      list.innerHTML = '';
+      rows.forEach(r => {
+        const row = document.createElement('div');
+        row.style.cursor = 'pointer';
+        if (r.id === tHighlightId) row.style.background = 'var(--bg-accent, #f3ead9)';
+        if (r.noteCount === 0) row.style.color = 'var(--danger)';
+        const status = !r.joined ? '尚未加入' : (r.noteCount === 0 ? '已加入，0 則' : r.noteCount + ' 則');
+        const left = document.createElement('span');
+        left.textContent = r.seatNo + ' 號';
+        const right = document.createElement('span');
+        right.style.cssText = 'display:flex;align-items:center;gap:8px;';
+        const statusSpan = document.createElement('span');
+        statusSpan.textContent = status;
+        right.appendChild(statusSpan);
+        if (r.joined) {
+          const releaseBtn = document.createElement('button');
+          releaseBtn.textContent = '解除';
+          releaseBtn.title = '如果學生點錯學號，用這個把這個學號解鎖，讓對的學生重新選';
+          releaseBtn.style.cssText = 'border:1px solid var(--border);background:#fff;color:var(--text-mid);font-size:.72rem;padding:3px 8px;border-radius:999px;cursor:pointer;';
+          releaseBtn.addEventListener('click', async ev => {
+            ev.stopPropagation();
+            if (!confirm(r.seatNo + ' 號目前選的座號要解除嗎？解除後這個座號可以被重新選一次。')) return;
+            await deleteDoc(doc(db, 'rooms', roomId, 'joined', r.id));
+          });
+          right.appendChild(releaseBtn);
+        }
+        row.appendChild(left); row.appendChild(right);
+        row.addEventListener('click', () => {
+          tHighlightId = (tHighlightId === r.id) ? null : r.id;
+          renderTeacherBoard();
+          // 重新套用選取列的底色（不用整份重畫這個名單，直接切 class 較快，但簡單起見重觸發一次 snapshot 渲染即可）
+          document.querySelectorAll('#joinedList > div').forEach(d => d.style.background = '');
+          if (tHighlightId === r.id) row.style.background = '#f3ead9';
+        });
+        list.appendChild(row);
+      });
+    });
+  });
+
+  onSnapshot(collection(db, 'rooms', roomId, 'notes'), snap => {
+    tNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTeacherBoard();
+  });
+}
+
+let tCategories = [], tNotes = [], tHighlightId = null;
+const T_COLORS = ['c0', 'c1', 'c2', 'c3', 'c4'];
+function colorForNote(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return T_COLORS[h % T_COLORS.length];
+}
+let tSelectedNoteId = null;
+
+function tNoteEl(n, idx) {
+  const el = document.createElement('div');
+  el.className = 'note ' + colorForNote(n.id);
+  if (tHighlightId) {
+    el.style.opacity = (n.studentId === tHighlightId) ? '1' : '.25';
+    if (n.studentId === tHighlightId) el.style.boxShadow = '0 0 0 3px var(--accent-dark)';
+  }
+  el.addEventListener('click', ev => {
+    ev.stopPropagation();
+    if (!tSelectedNoteId) {
+      tSelectedNoteId = n.id;
+      el.classList.add('selected');
+      return;
+    }
+    if (tSelectedNoteId === n.id) {
+      tSelectedNoteId = null;
+      el.classList.remove('selected');
+      return;
+    }
+    tGroupWithSelected(n.id);
+  });
+  const nameRow = document.createElement('div');
+  nameRow.className = 'n-name';
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = n.seatNo + ' 號';
+  nameSpan.style.cursor = 'pointer';
+  nameSpan.title = '點一下改成正確的座號';
+  nameSpan.addEventListener('click', async ev => {
+    ev.stopPropagation();
+    const newSeat = prompt('這則便利貼要改成哪個座號？（會同步把舊座號的發文則數 -1、新座號 +1）', n.seatNo);
+    if (!newSeat || !newSeat.trim() || newSeat.trim() === n.seatNo) return;
+    const newSeatTrim = newSeat.trim();
+    const oldSeat = n.seatNo;
+    try {
+      await runTransaction(db, async tx => {
+        const noteRef = doc(db, 'rooms', roomId, 'notes', n.id);
+        const oldJoinedRef = doc(db, 'rooms', roomId, 'joined', oldSeat);
+        const newJoinedRef = doc(db, 'rooms', roomId, 'joined', newSeatTrim);
+        const oldSnap = await tx.get(oldJoinedRef);
+        const newSnap = await tx.get(newJoinedRef);
+        tx.update(noteRef, { seatNo: newSeatTrim, studentId: newSeatTrim });
+        if (oldSnap.exists()) {
+          tx.update(oldJoinedRef, { noteCount: Math.max(0, (oldSnap.data().noteCount || 0) - 1) });
+        }
+        if (newSnap.exists()) {
+          tx.update(newJoinedRef, { noteCount: (newSnap.data().noteCount || 0) + 1 });
+        } else {
+          // 這個座號還沒加入過房間，先幫他補建一筆，則數從 1 開始（之後他真的加入時會沿用這個數字，不會被重置成 0）
+          tx.set(newJoinedRef, { seatNo: newSeatTrim, deviceToken: '', joinedAt: serverTimestamp(), noteCount: 1 });
+        }
+      });
+    } catch (e) {
+      alert('改座號失敗：' + e.message);
+    }
+  });
+  const del = document.createElement('button');
+  del.className = 'n-del';
+  del.textContent = '✕';
+  del.setAttribute('aria-label', '刪除這則便利貼');
+  del.addEventListener('click', ev => {
+    ev.stopPropagation();
+    deleteDoc(doc(db, 'rooms', roomId, 'notes', n.id));
+  });
+  nameRow.appendChild(nameSpan);
+  if (n.groupId) {
+    const leave = document.createElement('button');
+    leave.className = 'n-del';
+    leave.textContent = '↩';
+    leave.setAttribute('aria-label', '退出這一群');
+    leave.addEventListener('click', ev => {
+      ev.stopPropagation();
+      updateDoc(doc(db, 'rooms', roomId, 'notes', n.id), { groupId: null });
+    });
+    nameRow.appendChild(leave);
+  }
+  nameRow.appendChild(del);
+  const textDiv = document.createElement('div');
+  textDiv.className = 'n-text';
+  textDiv.textContent = n.text;
+  el.appendChild(nameRow); el.appendChild(textDiv);
+  if (n.createdAt && n.createdAt.toDate) {
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'n-time';
+    timeDiv.textContent = n.createdAt.toDate().toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    el.appendChild(timeDiv);
+  }
+  return el;
+}
+
+function renderTeacherBoard() {
+  const pool = document.getElementById('tPool');
+  const colsWrap = document.getElementById('tColumns');
+  if (!pool || !colsWrap) return;
+  pool.innerHTML = '';
+  colsWrap.innerHTML = '';
+  tCategories.forEach(c => {
+    const col = document.createElement('div');
+    col.className = 'col';
+    col.innerHTML = '<div class="col-title">' + c.label + '</div>';
+    const colNotes = document.createElement('div');
+    colNotes.className = 'col-notes';
+    col.appendChild(colNotes);
+    col.addEventListener('click', () => tTryMoveSelected(c.id));
+    colsWrap.appendChild(col);
+  });
+
+  const poolNotes = tNotes.filter(n => !n.categoryId);
+  const clusters = {};
+  const singles = [];
+  poolNotes.forEach(n => {
+    if (n.groupId) { (clusters[n.groupId] = clusters[n.groupId] || []).push(n); }
+    else { singles.push(n); }
+  });
+
+  Object.entries(clusters).forEach(([gid, notes]) => {
+    const box = document.createElement('div');
+    box.className = 'cluster';
+    const notesWrap = document.createElement('div');
+    notesWrap.className = 'cluster-notes';
+    notes.forEach((n, idx) => notesWrap.appendChild(tNoteEl(n, idx)));
+    const nameBtn = document.createElement('button');
+    nameBtn.className = 'name-cat-btn';
+    nameBtn.textContent = '幫這群命名成分類';
+    nameBtn.addEventListener('click', ev => { ev.stopPropagation(); tNameCluster(gid, notes); });
+    box.appendChild(notesWrap);
+    box.appendChild(nameBtn);
+    pool.appendChild(box);
+  });
+
+  singles.forEach((n, idx) => pool.appendChild(tNoteEl(n, idx)));
+
+  tNotes.filter(n => n.categoryId).forEach((n, idx) => {
+    const target = colsWrap.querySelector('.col:nth-child(' + (tCategories.findIndex(c => c.id === n.categoryId) + 1) + ') .col-notes');
+    if (target) target.appendChild(tNoteEl(n, idx));
+  });
+
+  pool.onclick = () => tTryMoveSelected(null);
+}
+
+async function tGroupWithSelected(targetId) {
+  const aId = tSelectedNoteId;
+  tSelectedNoteId = null;
+  document.querySelectorAll('#moderationCard .note.selected').forEach(x => x.classList.remove('selected'));
+  const a = tNotes.find(x => x.id === aId);
+  const b = tNotes.find(x => x.id === targetId);
+  if (!a || !b) return;
+  const gid = a.groupId || b.groupId || ('g' + Date.now());
+  const ids = new Set([aId, targetId]);
+  if (a.groupId) tNotes.filter(x => x.groupId === a.groupId).forEach(x => ids.add(x.id));
+  if (b.groupId) tNotes.filter(x => x.groupId === b.groupId).forEach(x => ids.add(x.id));
+  const batch = writeBatch(db);
+  ids.forEach(id => batch.update(doc(db, 'rooms', roomId, 'notes', id), { groupId: gid }));
+  await batch.commit();
+}
+
+async function tNameCluster(gid, notes) {
+  const label = prompt('這群便利貼要叫什麼分類名稱？');
+  if (!label || !label.trim()) return;
+  const catRef = doc(collection(db, 'rooms', roomId, 'categories'));
+  const batch = writeBatch(db);
+  batch.set(catRef, { label: label.trim(), order: tCategories.length });
+  notes.forEach(n => batch.update(doc(db, 'rooms', roomId, 'notes', n.id), { categoryId: catRef.id, groupId: null }));
+  await batch.commit();
+}
+
+async function tTryMoveSelected(categoryId) {
+  if (!tSelectedNoteId) return;
+  const id = tSelectedNoteId;
+  tSelectedNoteId = null;
+  document.querySelectorAll('#moderationCard .note.selected').forEach(x => x.classList.remove('selected'));
+  await updateDoc(doc(db, 'rooms', roomId, 'notes', id), { categoryId: categoryId, groupId: null });
+}
+
+document.getElementById('recalcBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('recalcBtn');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = '計算中…';
+  try {
+    const notesSnap = await getDocs(collection(db, 'rooms', roomId, 'notes'));
+    const counts = {};
+    notesSnap.docs.forEach(d => {
+      const seatNo = d.data().seatNo;
+      if (!seatNo) return;
+      counts[seatNo] = (counts[seatNo] || 0) + 1;
+    });
+    const joinedSnap = await getDocs(collection(db, 'rooms', roomId, 'joined'));
+    const joinedMap = {};
+    joinedSnap.docs.forEach(d => { joinedMap[d.id] = d.data(); });
+    const allSeats = new Set([...Object.keys(counts), ...Object.keys(joinedMap)]);
+    const batch = writeBatch(db);
+    let changed = 0;
+    allSeats.forEach(seatNo => {
+      const actual = counts[seatNo] || 0;
+      const ref = doc(db, 'rooms', roomId, 'joined', seatNo);
+      if (joinedMap[seatNo]) {
+        if ((joinedMap[seatNo].noteCount || 0) !== actual) {
+          batch.update(ref, { noteCount: actual });
+          changed++;
+        }
+      } else if (actual > 0) {
+        batch.set(ref, { seatNo, deviceToken: '', joinedAt: serverTimestamp(), noteCount: actual });
+        changed++;
+      }
+    });
+    if (changed > 0) await batch.commit();
+    alert(changed > 0 ? '重新計算完成，修正了 ' + changed + ' 個座號的資料' : '檢查過了，資料本來就是對的');
+  } catch (e) {
+    alert('重新計算失敗：' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = original;
+});
+
+document.getElementById('toggleAttendanceBtn').addEventListener('click', () => {
+  const list = document.getElementById('joinedList');
+  const nowHidden = list.classList.toggle('hidden');
+  document.getElementById('toggleAttendanceBtn').textContent = nowHidden ? '展開名單' : '收合名單';
+});
+
+document.getElementById('exportCsvBtn').addEventListener('click', () => {
+  const catLabelById = {};
+  tCategories.forEach(c => { catLabelById[c.id] = c.label; });
+  const rows = [['座號', '便利貼內容', '分類', '發布時間']];
+  tNotes.forEach(n => {
+    const category = n.categoryId ? (catLabelById[n.categoryId] || '') : '尚未分類';
+    const timeStr = (n.createdAt && n.createdAt.toDate) ?
+      n.createdAt.toDate().toLocaleString('zh-TW') : '';
+    rows.push([n.seatNo + ' 號', n.text, category, timeStr]);
+  });
+  const csv = rows.map(row => row.map(cell => {
+    const s = String(cell == null ? '' : cell);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const question = document.getElementById('activeQuestion').textContent.trim();
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '便利貼_' + (question || roomId) + '_' + dateStr + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('collapseTopicBtn').addEventListener('click', () => {
+  document.getElementById('activeRoomCard').classList.add('hidden');
+  document.getElementById('attendanceCard').classList.add('hidden');
+  document.getElementById('moderationCard').classList.add('hidden');
+  document.getElementById('topicListCard').scrollIntoView({ behavior: 'smooth' });
+});
+
+document.getElementById('addCatBtn').addEventListener('click', async () => {
+  const input = document.getElementById('newCatInput');
+  const errEl = document.getElementById('catErr');
+  errEl.textContent = '';
+  const label = input.value.trim();
+  if (!label) { errEl.textContent = '請輸入分類名稱'; return; }
+  try {
+    const existing = await getDocs(collection(db, 'rooms', roomId, 'categories'));
+    const nextOrder = existing.size;
+    await setDoc(doc(db, 'rooms', roomId, 'categories', 'cat' + Date.now()), { label, order: nextOrder });
+    input.value = '';
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
+
+document.getElementById('saveMaxNotesBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('maxNotesErr');
+  errEl.textContent = '';
+  const val = parseInt(document.getElementById('editMaxNotesInput').value || '0', 10);
+  try {
+    await updateDoc(doc(db, 'rooms', roomId), { maxNotesPerStudent: val });
+    errEl.style.color = 'var(--ok)';
+    errEl.textContent = '已更新，學生那邊馬上生效';
+    setTimeout(() => { errEl.textContent = ''; errEl.style.color = 'var(--danger)'; }, 3000);
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+});
+</script>
+</body>
+</html>

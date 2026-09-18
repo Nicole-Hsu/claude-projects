@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>課堂便利貼牆</title>
+<style>
+:root {
+  --bg: #fdf6ec;
+  --card: #ffffff;
+  --accent: #e08a3e;
+  --accent-dark: #b96a24;
+  --text: #3a2e22;
+  --text-mid: #7a6a5a;
+  --text-dim: #ab9c8c;
+  --border: rgba(0,0,0,.10);
+  --radius: 14px;
+  --danger: #d96060;
+}
+html { font-size: 19px; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { min-height: 100%; background: var(--bg); font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; color: var(--text); }
+button, select, input, textarea { font-family: inherit; }
+
+#header {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: #fff;
+  padding: 16px 18px;
+  text-align: center;
+}
+#header h1 { font-size: 1.15rem; font-weight: 700; line-height: 1.4; }
+
+.screen { display: none; padding: 18px 14px 40px; max-width: 640px; margin: 0 auto; }
+#screen-board.active { max-width: 1000px; }
+.screen.active { display: block; }
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  padding: 20px 18px;
+}
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: .82rem; font-weight: 600; color: var(--text-mid); margin-bottom: 6px; }
+.field input, .field select {
+  width: 100%; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 10px;
+  font-size: 1rem; background: #fafafa;
+}
+.btn {
+  display: block; width: 100%; padding: 13px; border: none; border-radius: 10px;
+  background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+  margin-top: 6px;
+}
+.btn:active { background: var(--accent-dark); }
+.btn:disabled { background: #ccc; cursor: not-allowed; }
+.err { color: var(--danger); font-size: .82rem; margin-top: 6px; min-height: 1.2em; }
+
+#question-bar {
+  background: #fff; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+}
+#question-bar .qlabel { font-size: .74rem; color: var(--text-dim); margin-bottom: 3px; }
+#question-bar .qtext { font-size: 1.05rem; font-weight: 700; }
+#question-bar .qmeta { font-size: .78rem; color: var(--text-mid); margin-top: 6px; }
+
+#composer {
+  display: flex; gap: 8px; margin-bottom: 16px; align-items: flex-start;
+}
+#noteText {
+  flex: 1; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 10px;
+  font-size: .95rem; resize: none; height: 44px; background: #fff;
+}
+#postBtn { width: 68px; padding: 0; height: 44px; }
+#counter { font-size: .72rem; color: var(--text-dim); text-align: right; margin-top: -10px; margin-bottom: 10px; }
+
+.pool-box {
+  background: rgba(0,0,0,.06); border: 1px solid rgba(0,0,0,.06); border-radius: var(--radius); padding: 12px; margin-bottom: 16px; min-height: 60px;
+}
+.pool-title { font-size: .76rem; color: var(--text-dim); margin-bottom: 8px; }
+.notes-wrap { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.col { background: rgba(0,0,0,.03); border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 10px; min-height: 90px; }
+.col-title { font-size: .82rem; font-weight: 700; color: var(--text-mid); margin-bottom: 8px; }
+.col-notes { display: flex; flex-direction: column; gap: 8px; min-height: 30px; }
+
+.note {
+  width: 148px; padding: 10px 10px 8px; border-radius: 3px 12px 4px 11px; cursor: pointer;
+  position: relative; transition: box-shadow .15s;
+  animation: pop .28s ease-out;
+}
+.col .note, .col-notes .note { width: 100%; }
+.note.selected { box-shadow: 0 0 0 3px var(--accent-dark); }
+.note .n-name { font-size: .8rem; font-weight: 700; margin-bottom: 4px; opacity: .85; display: flex; justify-content: space-between; gap: 6px; }
+.note .n-text { font-size: 1rem; line-height: 1.4; word-break: break-word; }
+.note .n-time { font-size: .68rem; opacity: .6; margin-top: 4px; }
+.note .n-del { border: none; background: none; color: inherit; opacity: .7; cursor: pointer; font-size: .78rem; padding: 0 2px; }
+@keyframes pop { 0% { transform: scale(.7); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+
+.tap-hint { text-align: center; font-size: .78rem; color: var(--text-dim); margin: -6px 0 14px; }
+
+.cluster {
+  border: 1.5px dashed var(--text-dim); border-radius: 12px; padding: 8px;
+  display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,.4);
+}
+.cluster .cluster-notes { display: flex; flex-wrap: wrap; gap: 8px; }
+.cluster .cluster-notes .note { width: 138px; }
+.name-cat-btn {
+  align-self: flex-start; border: none; background: var(--accent); color: #fff;
+  font-size: .72rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; cursor: pointer;
+}
+
+.c0 { background: #fde7c5; } .c0 .n-name { color: #8a5a10; } .c0 .n-text { color: #5c3c08; }
+.c1 { background: #cdeee0; } .c1 .n-name { color: #146850; } .c1 .n-text { color: #0c4636; }
+.c2 { background: #f6cfe0; } .c2 .n-name { color: #9c2f5e; } .c2 .n-text { color: #6e2142; }
+.c3 { background: #d6e4fb; } .c3 .n-name { color: #29579e; } .c3 .n-text { color: #1c3c6e; }
+.c4 { background: #e3dbf9; } .c4 .n-name { color: #5c419e; } .c4 .n-text { color: #40306e; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1 id="headerTitle">課堂便利貼牆</h1>
+</div>
+
+<div class="screen active" id="screen-join">
+  <div class="card">
+    <div class="field">
+      <label>討論室代碼</label>
+      <input id="roomCodeInput" placeholder="例如 8F3K2Q" autocomplete="off" style="text-transform:uppercase;">
+    </div>
+    <button class="btn" id="enterRoomBtn">進入討論室</button>
+    <div class="err" id="joinErr"></div>
+  </div>
+</div>
+
+<div class="screen" id="screen-name">
+  <div class="card">
+    <div class="field">
+      <label>請選擇您的座號</label>
+      <select id="nameSelect"><option value="">請選擇…</option></select>
+    </div>
+    <button class="btn" id="confirmNameBtn" disabled>確定，開始討論</button>
+    <div class="err" id="nameErr"></div>
+  </div>
+</div>
+
+<div class="screen" id="screen-board">
+  <div id="question-bar">
+    <div class="qlabel">本次議題</div>
+    <div class="qtext" id="qText"></div>
+    <div class="qmeta" id="qMeta"></div>
+  </div>
+
+  <div id="composer">
+    <textarea id="noteText" maxlength="40" placeholder="寫下你的想法（限 40 字）"></textarea>
+    <button class="btn" id="postBtn">發布</button>
+  </div>
+  <div id="counter">0 / 40</div>
+  <div class="err" id="postErr"></div>
+
+  <div class="pool-box">
+    <div class="pool-title">尚未分類</div>
+    <div class="notes-wrap" id="pool" data-col="pool"></div>
+  </div>
+
+  <div class="tap-hint" id="tapHint" style="display:none;">點一下便利貼選取，再點一下想歸類的欄位就會移過去</div>
+  <div class="columns" id="columns"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js';
+import {
+  getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot,
+  runTransaction, updateDoc, writeBatch, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDHv5IDqhZfBNAnOECLTx-Wk9khRdLjDTM",
+  authDomain: "kj-affinity-board.firebaseapp.com",
+  projectId: "kj-affinity-board",
+  storageBucket: "kj-affinity-board.firebasestorage.app",
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const COLORS = ['c0', 'c1', 'c2', 'c3', 'c4'];
+function colorForNote(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return COLORS[h % COLORS.length];
+}
+const qs = new URLSearchParams(location.search);
+let roomId = (qs.get('r') || '').toUpperCase().trim();
+let classId = null, maxNotes = 0, question = '';
+let studentId = null, deviceToken = null;
+let selectedNoteId = null;
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function uuid() {
+  return crypto.randomUUID ? crypto.randomUUID() : 'dev-' + Math.random().toString(36).slice(2) + Date.now();
+}
+function storageKey(rid) { return 'kj_identity_' + rid; }
+
+async function loadRoom(rid) {
+  const snap = await getDoc(doc(db, 'rooms', rid));
+  if (!snap.exists()) throw new Error('找不到這個討論室代碼，請跟老師確認');
+  const d = snap.data();
+  if (d.active === false) throw new Error('這個討論室已經關閉了');
+  classId = d.classId; maxNotes = d.maxNotesPerStudent || 0; question = d.question || '';
+  return d;
+}
+
+async function enterRoom(rid) {
+  document.getElementById('joinErr').textContent = '';
+  try {
+    await loadRoom(rid);
+    roomId = rid;
+    const saved = JSON.parse(localStorage.getItem(storageKey(roomId)) || 'null');
+    if (saved && saved.studentId && saved.deviceToken) {
+      const jSnap = await getDoc(doc(db, 'rooms', roomId, 'joined', saved.studentId));
+      if (jSnap.exists() && jSnap.data().deviceToken === saved.deviceToken) {
+        studentId = saved.studentId; deviceToken = saved.deviceToken;
+        enterBoard();
+        return;
+      }
+    }
+    showNamePicker();
+  } catch (e) {
+    document.getElementById('joinErr').textContent = e.message || '進入討論室失敗';
+  }
+}
+
+let rosterDocs = [], takenIds = new Set();
+let unsubRoster = null, unsubJoined = null;
+
+function renderNamePicker() {
+  const sel = document.getElementById('nameSelect');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">請選擇…</option>';
+  rosterDocs.forEach(d => {
+    const s = d.data();
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = (s.seatNo || d.id) + ' 號' + (takenIds.has(d.id) ? '（已有人加入｜若非本人使用，請通知老師）' : '');
+    sel.appendChild(opt);
+  });
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+
+function showNamePicker() {
+  // 用即時監聽：老師補名單、或有人選走名字，畫面會自動更新，不用重新整理
+  unsubRoster = onSnapshot(collection(db, 'classes', classId, 'students'), snap => {
+    rosterDocs = [...snap.docs].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+    renderNamePicker();
+  });
+  unsubJoined = onSnapshot(collection(db, 'rooms', roomId, 'joined'), snap => {
+    takenIds = new Set(snap.docs.map(d => d.id));
+    renderNamePicker();
+  });
+  show('screen-name');
+}
+
+document.getElementById('nameSelect').addEventListener('change', e => {
+  document.getElementById('confirmNameBtn').disabled = !e.target.value;
+});
+
+document.getElementById('confirmNameBtn').addEventListener('click', async () => {
+  const sel = document.getElementById('nameSelect');
+  const sid = sel.value;
+  const s = rosterDocs.find(d => d.id === sid).data();
+  const seatNo = s.seatNo;
+  const token = uuid();
+  try {
+    const ref = doc(db, 'rooms', roomId, 'joined', sid);
+    await runTransaction(db, async tx => {
+      const snap = await tx.get(ref);
+      if (snap.exists()) {
+        // 已經有人（可能是自己換裝置）加入過，保留原本的發文則數，只更新身份資訊
+        tx.update(ref, { seatNo, deviceToken: token, joinedAt: serverTimestamp() });
+      } else {
+        tx.set(ref, { seatNo, deviceToken: token, joinedAt: serverTimestamp(), noteCount: 0 });
+      }
+    });
+    studentId = sid; deviceToken = token;
+    localStorage.setItem(storageKey(roomId), JSON.stringify({ studentId: sid, deviceToken: token }));
+    if (unsubRoster) unsubRoster();
+    if (unsubJoined) unsubJoined();
+    enterBoard();
+  } catch (e) {
+    document.getElementById('nameErr').textContent = e.message || '加入失敗，再試一次';
+  }
+});
+
+document.getElementById('enterRoomBtn').addEventListener('click', () => {
+  const v = document.getElementById('roomCodeInput').value.toUpperCase().trim();
+  if (!v) { document.getElementById('joinErr').textContent = '請輸入討論室代碼'; return; }
+  enterRoom(v);
+});
+
+function enterBoard() {
+  document.getElementById('headerTitle').textContent = '課堂便利貼牆';
+  document.getElementById('qText').textContent = question;
+  show('screen-board');
+  listenCategories();
+  listenNotes();
+  onSnapshot(doc(db, 'rooms', roomId), snap => {
+    if (!snap.exists()) return;
+    maxNotes = snap.data().maxNotesPerStudent || 0;
+  });
+}
+
+let categories = [];
+function listenCategories() {
+  onSnapshot(collection(db, 'rooms', roomId, 'categories'), snap => {
+    categories = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+    renderColumns();
+  });
+}
+
+let allNotes = [];
+function listenNotes() {
+  onSnapshot(collection(db, 'rooms', roomId, 'notes'), snap => {
+    allNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderNotes();
+  });
+}
+
+function renderColumns() {
+  const wrap = document.getElementById('columns');
+  wrap.innerHTML = '';
+  document.getElementById('tapHint').style.display = categories.length ? '' : 'none';
+  categories.forEach(c => {
+    const col = document.createElement('div');
+    col.className = 'col'; col.dataset.col = c.id;
+    col.innerHTML = '<div class="col-title">' + c.label + '</div><div class="col-notes" data-col="' + c.id + '"></div>';
+    col.addEventListener('click', () => tryMoveSelected(c.id));
+    wrap.appendChild(col);
+  });
+  renderNotes();
+}
+
+function noteEl(n, idx) {
+  const el = document.createElement('div');
+  el.className = 'note ' + colorForNote(n.id);
+  el.dataset.id = n.id;
+  const nameRow = document.createElement('div');
+  nameRow.className = 'n-name';
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = n.seatNo + ' 號';
+  nameRow.appendChild(nameSpan);
+  if (n.groupId) {
+    const leave = document.createElement('button');
+    leave.className = 'n-del';
+    leave.textContent = '↩';
+    leave.setAttribute('aria-label', '退出這一群');
+    leave.addEventListener('click', ev => {
+      ev.stopPropagation();
+      updateDoc(doc(db, 'rooms', roomId, 'notes', n.id), { groupId: null });
+    });
+    nameRow.appendChild(leave);
+  }
+  const textDiv = document.createElement('div');
+  textDiv.className = 'n-text';
+  textDiv.textContent = n.text;
+  el.appendChild(nameRow); el.appendChild(textDiv);
+  if (n.createdAt && n.createdAt.toDate) {
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'n-time';
+    timeDiv.textContent = n.createdAt.toDate().toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    el.appendChild(timeDiv);
+  }
+  el.addEventListener('click', ev => {
+    ev.stopPropagation();
+    if (!selectedNoteId) {
+      selectedNoteId = n.id;
+      el.classList.add('selected');
+      return;
+    }
+    if (selectedNoteId === n.id) {
+      selectedNoteId = null;
+      el.classList.remove('selected');
+      return;
+    }
+    // 已經選了另一張 → 這次點的這張跟它靠在一起成一群
+    groupWithSelected(n.id);
+  });
+  return el;
+}
+
+function renderNotes() {
+  const pool = document.getElementById('pool');
+  pool.innerHTML = '';
+  document.querySelectorAll('.col-notes').forEach(c => c.innerHTML = '');
+
+  const poolNotes = allNotes.filter(n => !n.categoryId);
+  const clusters = {};
+  const singles = [];
+  poolNotes.forEach(n => {
+    if (n.groupId) {
+      (clusters[n.groupId] = clusters[n.groupId] || []).push(n);
+    } else {
+      singles.push(n);
+    }
+  });
+
+  Object.entries(clusters).forEach(([gid, notes]) => {
+    const box = document.createElement('div');
+    box.className = 'cluster';
+    const notesWrap = document.createElement('div');
+    notesWrap.className = 'cluster-notes';
+    notes.forEach((n, idx) => notesWrap.appendChild(noteEl(n, idx)));
+    const nameBtn = document.createElement('button');
+    nameBtn.className = 'name-cat-btn';
+    nameBtn.textContent = '幫這群命名成分類';
+    nameBtn.addEventListener('click', ev => { ev.stopPropagation(); nameCluster(gid, notes); });
+    box.appendChild(notesWrap);
+    box.appendChild(nameBtn);
+    pool.appendChild(box);
+  });
+
+  singles.forEach((n, idx) => pool.appendChild(noteEl(n, idx)));
+
+  allNotes.filter(n => n.categoryId).forEach((n, idx) => {
+    const target = document.querySelector('.col-notes[data-col="' + n.categoryId + '"]');
+    if (target) target.appendChild(noteEl(n, idx));
+  });
+
+  pool.onclick = () => tryMoveSelected(null);
+}
+
+async function groupWithSelected(targetId) {
+  const aId = selectedNoteId;
+  selectedNoteId = null;
+  document.querySelectorAll('.note.selected').forEach(x => x.classList.remove('selected'));
+  const a = allNotes.find(x => x.id === aId);
+  const b = allNotes.find(x => x.id === targetId);
+  if (!a || !b) return;
+  const gid = a.groupId || b.groupId || ('g' + Date.now());
+  const ids = new Set([aId, targetId]);
+  if (a.groupId) allNotes.filter(x => x.groupId === a.groupId).forEach(x => ids.add(x.id));
+  if (b.groupId) allNotes.filter(x => x.groupId === b.groupId).forEach(x => ids.add(x.id));
+  const batch = writeBatch(db);
+  ids.forEach(id => batch.update(doc(db, 'rooms', roomId, 'notes', id), { groupId: gid }));
+  await batch.commit();
+}
+
+async function nameCluster(gid, notes) {
+  const label = prompt('這群便利貼要叫什麼分類名稱？');
+  if (!label || !label.trim()) return;
+  const catRef = doc(collection(db, 'rooms', roomId, 'categories'));
+  const batch = writeBatch(db);
+  batch.set(catRef, { label: label.trim(), order: categories.length });
+  notes.forEach(n => batch.update(doc(db, 'rooms', roomId, 'notes', n.id), { categoryId: catRef.id, groupId: null }));
+  await batch.commit();
+}
+
+async function tryMoveSelected(categoryId) {
+  if (!selectedNoteId) return;
+  const id = selectedNoteId;
+  selectedNoteId = null;
+  document.querySelectorAll('.note.selected').forEach(x => x.classList.remove('selected'));
+  await updateDoc(doc(db, 'rooms', roomId, 'notes', id), { categoryId: categoryId, groupId: null });
+}
+
+const noteTextEl = document.getElementById('noteText');
+noteTextEl.addEventListener('input', () => {
+  document.getElementById('counter').textContent = noteTextEl.value.length + ' / 40';
+});
+
+document.getElementById('postBtn').addEventListener('click', async () => {
+  const text = noteTextEl.value.trim();
+  const errEl = document.getElementById('postErr');
+  errEl.textContent = '';
+  if (!text) { errEl.textContent = '先寫點什麼吧'; return; }
+  if (text.length > 40) { errEl.textContent = '超過 40 字囉，精簡一下'; return; }
+  const postBtn = document.getElementById('postBtn');
+  postBtn.disabled = true;
+  try {
+    await runTransaction(db, async tx => {
+      const jRef = doc(db, 'rooms', roomId, 'joined', studentId);
+      const jSnap = await tx.get(jRef);
+      const jData = jSnap.data();
+      if (maxNotes > 0 && jData.noteCount >= maxNotes) {
+        throw new Error('你已經發到上限了（每人最多 ' + maxNotes + ' 則）');
+      }
+      const noteRef = doc(collection(db, 'rooms', roomId, 'notes'));
+      tx.set(noteRef, {
+        studentId, deviceToken, seatNo: jData.seatNo,
+        text, categoryId: null, createdAt: serverTimestamp()
+      });
+      tx.update(jRef, { noteCount: jData.noteCount + 1 });
+    });
+    noteTextEl.value = '';
+    document.getElementById('counter').textContent = '0 / 40';
+  } catch (e) {
+    errEl.textContent = e.message || '發布失敗，再試一次';
+  }
+  postBtn.disabled = false;
+});
+
+if (roomId) {
+  document.getElementById('roomCodeInput').value = roomId;
+  enterRoom(roomId);
+}
+</script>
+</body>
+</html>

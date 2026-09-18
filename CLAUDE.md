@@ -18,12 +18,13 @@
 - 📋 GDrive 工作桌：`D:\我的雲端硬碟\claude專案\`（自動跨電腦同步）
 - 🐙 GitHub repo：`Nicole-Hsu/claude-projects`（公開，網頁的家）
 - 📘 Obsidian 駕駛艙：`Obsidian_第二大腦/claude專案/工作筆記.md`（想法的家）
-- 🔥 Firebase 專案：`my-teaching-tools`（資料的家）
+- 🔥 Firebase 專案：`kj-affinity-board`（KJ 法課堂便利貼牆專用；其他工具各自用 GAS/Sheets，不共用這個專案）
 
 ## 工具清單
 （之後加新工具時會自動更新）
 - [座標獵人](tools/coordinate-hunter/index.html)：直角座標練習遊戲，11×11 格點、60 秒倒數、10 個隱藏目標
-- [KJ 法課堂便利貼牆](tools/kj-affinity-board/)：老師發問（QR code 加入）、學生發便利貼、全班拖曳歸類；規格見 `PROGRESS.md`。**尚未接上 Firebase 專案**，見 `tools/kj-affinity-board/README.md`
+- [KJ 法課堂便利貼牆](tools/kj-affinity-board/)：老師發問（QR code 加入）、學生發匿名座號便利貼、全班歸類分類。**已正式上線**，白名單登入管控，短網址 `kj.html`。詳細進度見 `PROGRESS.md`
+  - [測試版](tools/kj-affinity-board-v2/)：程式碼副本，用來開發新功能不影響正式版；**跟正式版共用同一個 Firestore 資料庫與規則**，規則層級改動仍會影響正式版，見 `tools/kj-affinity-board-v2/README.md`
 
 ## 工作注意事項
 - 學生資料一律去識別化（只用座號 + 班級代號）
