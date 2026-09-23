@@ -1075,6 +1075,64 @@ function populateInitialData() {
 }
 
 // ─── 新增參訪表單到其他行政組第7項（執行一次即可）────────────────
+// 診斷：列出國際合作研究交流（GroupID=4）的工作項目與表單
+function diagnoseIntlForms() {
+  const wiSheet   = ss().getSheetByName('工作項目');
+  const formSheet = ss().getSheetByName('表單連結');
+  const wiData    = wiSheet.getDataRange().getValues();
+  const fData     = formSheet.getDataRange().getValues();
+
+  Logger.log('=== 工作項目（GroupID=4）===');
+  for (let i = 1; i < wiData.length; i++) {
+    if (String(wiData[i][1]) === '4') {
+      Logger.log('ID=' + wiData[i][0] + ' GroupID=' + wiData[i][1] + ' ItemNo=' + wiData[i][3] + ' Title=' + wiData[i][4]);
+    }
+  }
+  Logger.log('=== 表單連結（前20筆）===');
+  for (let i = 1; i < Math.min(fData.length, 21); i++) {
+    Logger.log('WorkItemID=' + fData[i][1] + ' FormName=' + fData[i][2]);
+  }
+}
+
+// 將國際合作研究交流（GroupID=4）第1項的表單改為學術活動（一次性執行）
+function updateIntlGroup1FormToAcademic() {
+  const wiSheet   = ss().getSheetByName('工作項目');
+  const formSheet = ss().getSheetByName('表單連結');
+
+  // 找 GroupID=4、ItemNo=1 的工作項目
+  const wiData = wiSheet.getDataRange().getValues();
+  let targetId = null;
+  for (let i = 1; i < wiData.length; i++) {
+    if (String(wiData[i][1]) === '4' && String(wiData[i][3]) === '1') {
+      targetId = wiData[i][0];
+      break;
+    }
+  }
+  if (!targetId) { Logger.log('❌ 找不到國際合作研究交流第1項工作項目'); return; }
+  Logger.log('✅ 找到工作項目 ID: ' + targetId);
+
+  // 找該項目在表單連結表的所有列，全部刪掉
+  const fData = formSheet.getDataRange().getValues();
+  const toDelete = [];
+  for (let i = fData.length - 1; i >= 1; i--) {
+    if (String(fData[i][1]) === String(targetId)) toDelete.push(i + 1);
+  }
+  toDelete.forEach(r => formSheet.deleteRow(r));
+  Logger.log('🗑 刪除舊表單連結 ' + toDelete.length + ' 筆');
+
+  // 新增學術活動表單連結
+  const now = new Date().toISOString();
+  formSheet.appendRow([
+    'FL_' + Date.now(),
+    targetId,
+    '學術活動',
+    'https://docs.google.com/spreadsheets/d/1X2RQduUJwQQMQ20qqRcGKyD42dx4VhV0D5dfuX2cF78/edit?gid=858324363#gid=858324363',
+    'https://docs.google.com/spreadsheets/d/1NCP7Bh0k09GN5R_O8WP2ihFmifnEec7U2OE4pjqjiG0/edit?gid=1212461482#gid=1212461482',
+    now
+  ]);
+  Logger.log('✅ 學術活動表單已寫入工作項目 ' + targetId);
+}
+
 function addVisitForm() {
   const wiSheet   = ss().getSheetByName('工作項目');
   const formSheet = ss().getSheetByName('表單連結');
