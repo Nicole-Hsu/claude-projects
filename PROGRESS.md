@@ -5,6 +5,15 @@
 
 ## ⏯️ 上次做到哪
 
+### 🗓️ 2026-09-24｜例行檢查，APP 無異常
+
+- 使用者沒有要做新功能，只是檢查 APP 有沒有問題：短網址、老師後台、學生端、測試版都能開（200），Firestore 公開讀取正常，`firestore.rules` 沒有到期日（收到 Firebase「開發規則 10/23 到期」通知，但這個專案不受影響）。
+- Firebase MCP 仍 `CONNECT_TIMEOUT`。已用 `npx.cmd firebase-tools login --reauth` 重新登入（PowerShell 擋 `npx.ps1`，要用 `npx.cmd`）；需完整關掉再重開 Claude 桌面 App 才會重連。
+- 本機有其他工具搬到 `D:\我的雲端硬碟\2026-工具` 造成的 22 個刪除變動（KPI、sign-in-system、sign_in_systemII、coordinate-hunter、根目錄 index.html），**刻意不 commit、不推到 `gh-pages`**，否則對外舊連結會 404。
+- 其他 Firebase 專案（signinsystem2026、qmethod-classroom、codex2026-2180c）尚未檢查是否有到期的測試規則。
+
+---
+
 ### 🗓️ 2026-09-18｜建立測試版，跟正式版分開開發
 
 **這次做的事**：

@@ -21,8 +21,7 @@
 - 🔥 Firebase 專案：`kj-affinity-board`（KJ 法課堂便利貼牆專用；其他工具各自用 GAS/Sheets，不共用這個專案）
 
 ## 工具清單
-（之後加新工具時會自動更新）
-- [座標獵人](tools/coordinate-hunter/index.html)：直角座標練習遊戲，11×11 格點、60 秒倒數、10 個隱藏目標
+（之後加新工具時會自動更新；這個資料夾現在只放 KJ 法相關工具，其他工具已搬到 `D:\我的雲端硬碟\2026-工具`）
 - [KJ 法課堂便利貼牆](tools/kj-affinity-board/)：老師發問（QR code 加入）、學生發匿名座號便利貼、全班歸類分類。**已正式上線**，白名單登入管控，短網址 `kj.html`。詳細進度見 `PROGRESS.md`
   - [測試版](tools/kj-affinity-board-v2/)：程式碼副本，用來開發新功能不影響正式版；**跟正式版共用同一個 Firestore 資料庫與規則**，規則層級改動仍會影響正式版，見 `tools/kj-affinity-board-v2/README.md`
 
