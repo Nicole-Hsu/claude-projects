@@ -1192,16 +1192,39 @@ function delPlanned(id,wiId){if(!confirm('確定刪除？'))return;google.script
 // ════ Pool CRUD ════
 const _p2Lock={};
 function addPool2(wiId) {
-  if(_p2Lock[wiId]){return;} // 防止重複送出
+  if(_p2Lock[wiId]){return;}
   const content=document.getElementById('p2t_'+wiId).value.trim();
   const year=document.getElementById('p2y_'+wiId).value.trim();
   const month=document.getElementById('p2m_'+wiId).value.trim();
-  const color='#dc2626'; // 固定紅字
+  const color='#dc2626';
   if(!content){toast('請填寫執行狀況內容','err');return;}
   _p2Lock[wiId]=true;
+
+  // 樂觀更新：先把新資料插入執行狀況捲動區頂端
+  const tempId='_tmp_'+Date.now();
+  const wc=document.getElementById('wc2_'+wiId);
+  const container=wc&&wc.querySelector('.band-green .bcnt > div[style*="overflow"]');
+  if(container){
+    const el=document.createElement('div');
+    el.className='ep2';el.id=tempId;el.style.opacity='0.6';
+    el.innerHTML=`<div class="ep2-head"><span class="emeta" style="color:#92400e">📝 本月 · ${year}年${month}月</span><span style="font-size:.7rem;color:var(--muted)">儲存中…</span></div><div class="etext" style="color:${color}">${esc(content)}</div>`;
+    container.insertBefore(el,container.firstChild);
+  }
+  document.getElementById('p2t_'+wiId).value='';
+  document.getElementById('p2y_'+wiId).value='';
+  document.getElementById('p2m_'+wiId).value='';
+
   google.script.run
-    .withSuccessHandler(()=>{_p2Lock[wiId]=false;toast('已新增');document.getElementById('p2t_'+wiId).value='';inv(wiId,true);})
-    .withFailureHandler(e=>{_p2Lock[wiId]=false;toast('失敗','err');})
+    .withSuccessHandler(()=>{
+      _p2Lock[wiId]=false;
+      const tmp=document.getElementById(tempId);if(tmp)tmp.remove();
+      inv(wiId,true);
+    })
+    .withFailureHandler(e=>{
+      _p2Lock[wiId]=false;
+      const tmp=document.getElementById(tempId);if(tmp)tmp.remove();
+      toast('儲存失敗，請重試','err');
+    })
     .saveToPool2({WorkItemID:wiId,Year:year,Month:month,Content:content,TextColor:color});
 }
 function editPool2Entry(p) {
