@@ -1396,6 +1396,7 @@ function generateMonthlyReport(year, month) {
     // 組標題
     const groupPara = body.appendParagraph(gName);
     groupPara.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    groupPara.editAsText().setForegroundColor('#1a56db');
 
     items.forEach(item => {
       // 工作項目標題
@@ -1405,6 +1406,7 @@ function generateMonthlyReport(year, month) {
       // 本月執行狀況
       const execLabel = body.appendParagraph('【本月執行狀況】');
       execLabel.setBold(true);
+      execLabel.editAsText().setForegroundColor('#000000');
 
       const execRows = allPool2.filter(p =>
         String(p.WorkItemID) === String(item.ID) &&
@@ -1413,9 +1415,10 @@ function generateMonthlyReport(year, month) {
       );
 
       if (execRows.length) {
-        execRows.forEach(p => {
-          const t = body.appendParagraph(String(p.Content || ''));
+        execRows.forEach((p, i) => {
+          const t = body.appendParagraph((i+1) + '. ' + String(p.Content || ''));
           t.setIndentStart(18);
+          t.editAsText().setForegroundColor('#cc0000');
         });
       } else {
         const t = body.appendParagraph('本月無執行狀況');
@@ -1427,15 +1430,17 @@ function generateMonthlyReport(year, month) {
       // 預計下月工作
       const nextLabel = body.appendParagraph('【預計下月工作】');
       nextLabel.setBold(true);
+      nextLabel.editAsText().setForegroundColor('#1a56db');
 
       const nextRows = allPoolNext.filter(p =>
         String(p.WorkItemID) === String(item.ID)
       );
 
       if (nextRows.length) {
-        nextRows.forEach(p => {
-          const t = body.appendParagraph(String(p.Content || ''));
+        nextRows.forEach((p, i) => {
+          const t = body.appendParagraph((i+1) + '. ' + String(p.Content || ''));
           t.setIndentStart(18);
+          t.editAsText().setForegroundColor('#1a56db');
         });
       } else {
         const t = body.appendParagraph('尚無預計工作');
