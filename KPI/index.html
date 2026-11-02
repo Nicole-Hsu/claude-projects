@@ -309,6 +309,8 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
     <button class="tb-btn" onclick="changeFs(1)">A+</button>
     <div class="tb-div"></div>
     <button class="tb-btn" onclick="reloadItems()">↻ 重新整理</button>
+    <div class="tb-div"></div>
+    <button class="tb-btn" onclick="openMonthlyReportModal()" style="background:#059669;color:#fff;border-radius:6px;padding:4px 10px;font-weight:600">📄 產生月報</button>
   </div>
 
   <!-- Content -->
@@ -379,6 +381,31 @@ a{color:var(--blue);text-decoration:none;}a:hover{text-decoration:underline;}
     <div class="mact">
       <button class="btn btn-o" onclick="closeModal('exportModal')">取消</button>
       <button class="btn btn-p" onclick="submitExport()">⬇ 匯出試算表</button>
+    </div>
+  </div>
+</div>
+
+<!-- Monthly Report Modal -->
+<div class="mbg" id="monthlyReportModal">
+  <div class="modal" style="max-width:340px">
+    <h3>📄 產生月報</h3>
+    <div class="frow">
+      <label>民國年</label>
+      <input id="mrYear" placeholder="e.g. 115" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.84rem;font-family:inherit">
+    </div>
+    <div class="frow">
+      <label>月份</label>
+      <select id="mrMonth" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.84rem;font-family:inherit">
+        <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+        <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+        <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+        <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+      </select>
+    </div>
+    <div id="mrStatus" style="font-size:.8rem;color:var(--muted);min-height:18px;margin-top:4px"></div>
+    <div class="mact">
+      <button class="btn btn-o" onclick="closeModal('monthlyReportModal')">取消</button>
+      <button class="btn btn-p" id="mrBtn" onclick="submitMonthlyReport()">產生報告</button>
     </div>
   </div>
 </div>
@@ -1545,6 +1572,36 @@ function decodeHtml(s){const t=document.createElement('textarea');t.innerHTML=s;
 function toast(msg,type){const el=document.getElementById('toast');el.textContent=msg;el.style.background=type==='err'?'#dc2626':'#1e293b';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3000);}
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ════ Monthly Report ════
+function openMonthlyReportModal() {
+  // 預設填當月
+  const now = new Date();
+  const rocYear = now.getFullYear() - 1911;
+  document.getElementById('mrYear').value = rocYear;
+  document.getElementById('mrMonth').value = now.getMonth() + 1;
+  document.getElementById('mrStatus').textContent = '';
+  document.getElementById('mrBtn').disabled = false;
+  openModal('monthlyReportModal');
+}
+function submitMonthlyReport() {
+  const year  = document.getElementById('mrYear').value.trim();
+  const month = document.getElementById('mrMonth').value;
+  if (!year) { document.getElementById('mrStatus').textContent = '請填寫民國年'; return; }
+  document.getElementById('mrBtn').disabled = true;
+  document.getElementById('mrStatus').textContent = '產生中，請稍候…';
+  google.script.run
+    .withSuccessHandler(r => {
+      document.getElementById('mrStatus').innerHTML =
+        '✅ 完成！<a href="' + r.url + '" target="_blank" style="color:#2563eb;text-decoration:underline">開啟報告</a>';
+      document.getElementById('mrBtn').disabled = false;
+    })
+    .withFailureHandler(e => {
+      document.getElementById('mrStatus').textContent = '❌ 失敗：' + (e.message || '請重試');
+      document.getElementById('mrBtn').disabled = false;
+    })
+    .generateMonthlyReport(year, month);
+}
 function setLoading(on,errMsg){
   const el=document.getElementById('wiList');
   if(!el)return;

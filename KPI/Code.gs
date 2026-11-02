@@ -1164,3 +1164,293 @@ function addVisitForm() {
   ]);
   Logger.log('✅ 參訪表單已新增到工作項目 ' + targetId);
 }
+
+// 更新課程教學組（GroupID=1）第2、3、4項工作項目（一次性執行）
+function updateGroup1Items234() {
+  const wiSheet  = ss().getSheetByName('工作項目');
+  const tSheet   = ss().getSheetByName('負責教師');
+  const cSheet   = ss().getSheetByName('協辦人員');
+  const wiData   = wiSheet.getDataRange().getValues();
+
+  // 找 GroupID=1 的 ItemNo=2,3,4
+  const targets = {};
+  for (let i = 1; i < wiData.length; i++) {
+    if (String(wiData[i][1]) === '1' && ['2','3','4'].includes(String(wiData[i][3]))) {
+      targets[String(wiData[i][3])] = { rowIdx: i + 1, id: wiData[i][0] };
+    }
+  }
+  Logger.log('找到工作項目：' + JSON.stringify(Object.keys(targets)));
+
+  // ── 第2項：改標題
+  if (targets['2']) {
+    wiSheet.getRange(targets['2'].rowIdx, 5).setValue('課程教材創新發展：發展AI賦能智慧照護情境教案');
+    Logger.log('✅ 第2項標題已更新');
+
+    // 新增負責教師 簡麗瑜
+    tSheet.appendRow([uid('TC'), targets['2'].id, '簡麗瑜', '']);
+    Logger.log('✅ 第2項新增負責教師：簡麗瑜');
+
+    // 刪除所有協辦人員
+    const cData = cSheet.getDataRange().getValues();
+    for (let i = cData.length - 1; i >= 1; i--) {
+      if (String(cData[i][1]) === String(targets['2'].id)) cSheet.deleteRow(i + 1);
+    }
+    Logger.log('✅ 第2項協辦人員已全部刪除');
+  }
+
+  // ── 第3項：改標題、刪除簡麗瑜、新增協辦人員蔡明芬
+  if (targets['3']) {
+    wiSheet.getRange(targets['3'].rowIdx, 5).setValue('推動微學程實施與管理：發展AI賦能健康照護微學程');
+    Logger.log('✅ 第3項標題已更新');
+
+    // 刪除負責教師 簡麗瑜
+    const tData = tSheet.getDataRange().getValues();
+    for (let i = tData.length - 1; i >= 1; i--) {
+      if (String(tData[i][1]) === String(targets['3'].id) && String(tData[i][2]) === '簡麗瑜') {
+        tSheet.deleteRow(i + 1);
+        Logger.log('✅ 第3項已刪除負責教師：簡麗瑜');
+      }
+    }
+
+    // 新增協辦人員 蔡明芬
+    cSheet.appendRow([uid('CO'), targets['3'].id, '蔡明芬', '']);
+    Logger.log('✅ 第3項新增協辦人員：蔡明芬');
+  }
+
+  // ── 第4項：只改標題
+  if (targets['4']) {
+    wiSheet.getRange(targets['4'].rowIdx, 5).setValue('統籌實習前臨床技能檢定');
+    Logger.log('✅ 第4項標題已更新');
+  }
+
+  Logger.log('🎉 全部完成');
+}
+
+// 刪除第3項重複的蔡明芬（保留一筆，一次性執行）
+function fixDupCaiMingFen() {
+  const wiSheet = ss().getSheetByName('工作項目');
+  const cSheet  = ss().getSheetByName('協辦人員');
+  const wiData  = wiSheet.getDataRange().getValues();
+
+  let wi3Id = null;
+  for (let i = 1; i < wiData.length; i++) {
+    if (String(wiData[i][1]) === '1' && String(wiData[i][3]) === '3') {
+      wi3Id = wiData[i][0]; break;
+    }
+  }
+  if (!wi3Id) { Logger.log('❌ 找不到第3項'); return; }
+
+  const cData = cSheet.getDataRange().getValues();
+  let found = 0;
+  for (let i = cData.length - 1; i >= 1; i--) {
+    if (String(cData[i][1]) === String(wi3Id) && String(cData[i][2]) === '蔡明芬') {
+      found++;
+      if (found > 1) { cSheet.deleteRow(i + 1); Logger.log('🗑 刪除重複的蔡明芬（row ' + (i+1) + '）'); }
+    }
+  }
+  Logger.log('✅ 完成，保留 1 筆蔡明芬');
+}
+
+// 更新三組共三項工作項目（一次性執行）
+function updateOct19Items() {
+  const wiSheet = ss().getSheetByName('工作項目');
+  const tSheet  = ss().getSheetByName('負責教師');
+  const cSheet  = ss().getSheetByName('協辦人員');
+  const wiData  = wiSheet.getDataRange().getValues();
+  const now     = new Date().toISOString();
+
+  // 找目標工作項目：GroupID=1/ItemNo=11、GroupID=4/ItemNo=4、GroupID=5/ItemNo=2
+  const targets = {};
+  for (let i = 1; i < wiData.length; i++) {
+    const g = String(wiData[i][1]), n = String(wiData[i][3]);
+    if (g==='1'&&n==='11') targets['1_11'] = {row:i+1, id:wiData[i][0]};
+    if (g==='4'&&n==='4')  targets['4_4']  = {row:i+1, id:wiData[i][0]};
+    if (g==='5'&&n==='2')  targets['5_2']  = {row:i+1, id:wiData[i][0]};
+  }
+  Logger.log('找到：' + JSON.stringify(Object.keys(targets)));
+
+  // ── GroupID=1 ItemNo=11 ──
+  if (targets['1_11']) {
+    const id = targets['1_11'].id;
+    wiSheet.getRange(targets['1_11'].row, 5).setValue('推動智慧護理專題共授與競賽：參與國內/國際競賽、專利申請');
+    Logger.log('✅ 1_11 標題已更新');
+
+    // 刪除所有負責教師，重新新增
+    _deleteAllTeachers(tSheet, id);
+    tSheet.appendRow([uid('TC'), id, '吳美玲', '']);
+    tSheet.appendRow([uid('TC'), id, '簡麗瑜', '']);
+    Logger.log('✅ 1_11 負責教師：吳美玲、簡麗瑜');
+
+    // 刪除所有協辦人員，重新新增
+    _deleteAllCoOrgs(cSheet, id);
+    cSheet.appendRow([uid('CO'), id, '孫瑞璟', '']);
+    cSheet.appendRow([uid('CO'), id, '孫高傑', '']);
+    Logger.log('✅ 1_11 協辦人員：孫瑞璟、孫高傑');
+  }
+
+  // ── GroupID=4 ItemNo=4 ──
+  if (targets['4_4']) {
+    const id = targets['4_4'].id;
+    wiSheet.getRange(targets['4_4'].row, 5).setValue('國際師生交流人次（參訪）');
+    Logger.log('✅ 4_4 標題已更新');
+
+    // 新增協辦人員（原本無，不刪）
+    cSheet.appendRow([uid('CO'), id, '羅永桂', '']);
+    cSheet.appendRow([uid('CO'), id, '孫高傑', '']);
+    Logger.log('✅ 4_4 新增協辦人員：羅永桂、孫高傑');
+  }
+
+  // ── GroupID=5 ItemNo=2 ──
+  if (targets['5_2']) {
+    const id = targets['5_2'].id;
+    // 標題不改
+
+    // 刪除所有負責教師，重新新增
+    _deleteAllTeachers(tSheet, id);
+    tSheet.appendRow([uid('TC'), id, '簡麗瑜', '']);
+    tSheet.appendRow([uid('TC'), id, '張怡雅', '']);
+    tSheet.appendRow([uid('TC'), id, '蔡金杏', '']);
+    Logger.log('✅ 5_2 負責教師：簡麗瑜、張怡雅、蔡金杏');
+
+    // 新增協辦人員（保留陳偉婷，新增羅永桂、孫高傑）
+    cSheet.appendRow([uid('CO'), id, '羅永桂', '']);
+    cSheet.appendRow([uid('CO'), id, '孫高傑', '']);
+    Logger.log('✅ 5_2 新增協辦人員：羅永桂、孫高傑');
+  }
+
+  Logger.log('🎉 全部完成');
+}
+
+function _deleteAllTeachers(sheet, wiId) {
+  const data = sheet.getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][1]) === String(wiId)) sheet.deleteRow(i + 1);
+  }
+}
+
+function _deleteAllCoOrgs(sheet, wiId) {
+  const data = sheet.getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][1]) === String(wiId)) sheet.deleteRow(i + 1);
+  }
+}
+
+// ─── 月報產生 ─────────────────────────────────────────────────
+const REPORT_FOLDER_ID = '1IWREYKn5GlpVCcOXj8kXkjlXHXjnlKzE';
+
+function generateMonthlyReport(year, month) {
+  const spreadsheet = ss();
+
+  function readSheet(name) {
+    const sheet = spreadsheet.getSheetByName(name);
+    if (!sheet) return [];
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    const headers = data[0];
+    return data.slice(1).filter(r => r[0]).map(r => {
+      const o = {}; headers.forEach((h, i) => o[h] = r[i]); return o;
+    });
+  }
+
+  const allItems    = readSheet(SHEET_NAMES.WORK_ITEMS);
+  const allPool2    = readSheet(SHEET_NAMES.POOL2);
+  const allPoolNext = readSheet(SHEET_NAMES.POOL_NEXT);
+
+  // 取得分組（優先讀 GROUPS 工作表，沒有則用預設）
+  let groups = DEFAULT_GROUPS.filter(g => !g.archived);
+  const gSheet = spreadsheet.getSheetByName(SHEET_NAMES.GROUPS);
+  if (gSheet && gSheet.getLastRow() > 1) {
+    const gData = gSheet.getDataRange().getValues();
+    const gh = gData[0];
+    const parsed = gData.slice(1).filter(r => r[0]).map(r => {
+      const o = {}; gh.forEach((h, i) => o[h] = r[i]); return o;
+    });
+    if (parsed.length) groups = parsed.filter(g => !g.archived && !g.Archived);
+  }
+
+  // 建立 Google Doc
+  const title = `KPI填報月報 — ${year}年${month}月`;
+  const folder = DriveApp.getFolderById(REPORT_FOLDER_ID);
+  const doc = DocumentApp.create(title);
+  DriveApp.getFileById(doc.getId()).moveTo(folder);
+
+  const body = doc.getBody();
+  body.clear();
+
+  // 標題
+  const titlePara = body.appendParagraph(title);
+  titlePara.setHeading(DocumentApp.ParagraphHeading.TITLE);
+
+  const yearStr  = String(year);
+  const monthStr = String(month);
+
+  groups.forEach(g => {
+    const gId   = String(g.id || g.ID || '');
+    const gName = g.name || g.Name || '';
+    const items = allItems
+      .filter(w => String(w.GroupID) === gId)
+      .sort((a, b) => Number(a.ItemNo) - Number(b.ItemNo));
+
+    if (!items.length) return;
+
+    // 組標題
+    const groupPara = body.appendParagraph(gName);
+    groupPara.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+
+    items.forEach(item => {
+      // 工作項目標題
+      const itemPara = body.appendParagraph(item.ItemNo + '. ' + (item.Title || ''));
+      itemPara.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+
+      // 本月執行狀況
+      const execLabel = body.appendParagraph('【本月執行狀況】');
+      execLabel.setBold(true);
+
+      const execRows = allPool2.filter(p =>
+        String(p.WorkItemID) === String(item.ID) &&
+        String(p.Year)  === yearStr &&
+        String(p.Month) === monthStr
+      );
+
+      if (execRows.length) {
+        execRows.forEach(p => {
+          const t = body.appendParagraph(String(p.Content || ''));
+          t.setIndentStart(18);
+        });
+      } else {
+        const t = body.appendParagraph('本月無執行狀況');
+        t.setIndentStart(18);
+        t.setItalic(true);
+        t.setForegroundColor('#888888');
+      }
+
+      // 預計下月工作
+      const nextLabel = body.appendParagraph('【預計下月工作】');
+      nextLabel.setBold(true);
+
+      const nextRows = allPoolNext.filter(p =>
+        String(p.WorkItemID) === String(item.ID)
+      );
+
+      if (nextRows.length) {
+        nextRows.forEach(p => {
+          const t = body.appendParagraph(String(p.Content || ''));
+          t.setIndentStart(18);
+        });
+      } else {
+        const t = body.appendParagraph('尚無預計工作');
+        t.setIndentStart(18);
+        t.setItalic(true);
+        t.setForegroundColor('#888888');
+      }
+
+      body.appendParagraph('');
+    });
+  });
+
+  doc.saveAndClose();
+
+  const url = 'https://docs.google.com/document/d/' + doc.getId() + '/edit';
+  Logger.log('✅ 月報已產生：' + url);
+  return { success: true, url: url, title: title };
+}
